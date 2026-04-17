@@ -1,0 +1,15 @@
+ {
+  "servers": {
+    "Salesforce DX": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@salesforce/mcp@latest",
+        "--orgs", 
+        "plaid",
+        "--toolsets", 
+        "all"
+      ]
+    }
+  }
+}
