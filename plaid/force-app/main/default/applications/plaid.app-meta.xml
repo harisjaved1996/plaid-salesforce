@@ -14,5 +14,5 @@
     <navType>Standard</navType>
     <tabs>plaid_hub</tabs>
     <uiType>Lightning</uiType>
-    <utilityBar>plaid_UtilityBar</utilityBar>
+    
 </CustomApplication>
