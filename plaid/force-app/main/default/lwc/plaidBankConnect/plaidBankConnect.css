@@ -1,0 +1,483 @@
+/* ── Root ─────────────────────────────────────────── */
+.plaid-wrapper {
+    font-family: 'Salesforce Sans', Arial, sans-serif;
+    padding: 0;
+    color: #111827;
+}
+
+/* ── Loading ──────────────────────────────────────── */
+.loading-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5rem 1rem;
+}
+
+/* ── Header Banner ────────────────────────────────── */
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    background: linear-gradient(135deg, #032d60 0%, #0070d2 100%);
+    border-radius: 12px;
+    margin-bottom: 1.25rem;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+}
+
+.header-icon {
+    width: 48px;
+    height: 48px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.header-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.65);
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.header-total {
+    font-size: 1.875rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0.1rem 0 0;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+}
+
+.header-sub {
+    font-size: 0.78125rem;
+    color: rgba(255,255,255,0.55);
+    margin: 0.2rem 0 0;
+}
+
+.header-add-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5625rem 1.125rem;
+    background: rgba(255,255,255,0.15);
+    border: 1.5px solid rgba(255,255,255,0.4);
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.header-add-btn:hover {
+    background: rgba(255,255,255,0.25);
+    transform: translateY(-1px);
+}
+
+/* ── Error Banner ─────────────────────────────────── */
+.error-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    color: #dc2626;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+}
+
+.error-close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: #dc2626;
+    cursor: pointer;
+    font-size: 1.125rem;
+    opacity: 0.7;
+}
+
+.error-close:hover { opacity: 1; }
+
+/* ── Empty State ──────────────────────────────────── */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3rem 1.5rem;
+    text-align: center;
+}
+
+.empty-icon {
+    width: 76px;
+    height: 76px;
+    background: linear-gradient(135deg, #e8f4fd, #c5dcf0);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.125rem;
+    margin-bottom: 1.25rem;
+}
+
+.empty-title {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 0.5rem;
+}
+
+.empty-desc {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin: 0 0 1.75rem;
+    max-width: 280px;
+    line-height: 1.55;
+}
+
+.empty-btn {
+    padding: 0.5625rem 1.5rem;
+    background: linear-gradient(135deg, #0070d2, #005fb2);
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(0,112,210,0.35);
+    transition: box-shadow 0.15s, transform 0.1s;
+}
+
+.empty-btn:hover {
+    box-shadow: 0 5px 16px rgba(0,112,210,0.45);
+    transform: translateY(-1px);
+}
+
+/* ── Bank Card ────────────────────────────────────── */
+.bank-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    margin-bottom: 0.875rem;
+    overflow: hidden;
+    background: #ffffff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    transition: box-shadow 0.2s;
+}
+
+.bank-card:last-child { margin-bottom: 0; }
+.bank-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.09); }
+
+/* ── Bank Header (clickable) ──────────────────────── */
+.bank-header {
+    display: flex;
+    align-items: center;
+    padding: 0.9375rem 1.25rem;
+    gap: 0.875rem;
+    background: #f8f9fa;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.13s;
+    border-bottom: 1px solid transparent;
+}
+
+.bank-header:hover { background: #f1f3f5; }
+.bank-header--expanded { border-bottom-color: #e5e7eb; }
+
+.bank-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.125rem;
+    font-weight: 800;
+    color: #ffffff;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.bank-info { flex: 1; min-width: 0; }
+
+.bank-name {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bank-count {
+    font-size: 0.78125rem;
+    color: #6b7280;
+    margin: 0.1rem 0 0;
+}
+
+/* ── Bank Actions ─────────────────────────────────── */
+.bank-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    flex-shrink: 0;
+}
+
+.bank-remove-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3125rem 0.75rem;
+    background: transparent;
+    border: 1.5px solid #fca5a5;
+    border-radius: 6px;
+    color: #dc2626;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.13s, border-color 0.13s;
+    white-space: nowrap;
+}
+
+.bank-remove-btn:hover {
+    background: #fef2f2;
+    border-color: #f87171;
+}
+
+.bank-confirm-row {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    animation: slideIn 0.15s ease;
+}
+
+/* ── Chevron ──────────────────────────────────────── */
+.chevron {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    color: #9ca3af;
+    transition: background 0.13s, transform 0.25s ease;
+    flex-shrink: 0;
+}
+
+.chevron:hover { background: #e5e7eb; }
+.chevron--open { transform: rotate(180deg); }
+
+/* ── Accounts Container ───────────────────────────── */
+.accounts-wrap {
+    max-height: 2000px;
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.25s;
+    opacity: 1;
+}
+
+.accounts-wrap--closed {
+    max-height: 0;
+    opacity: 0;
+}
+
+/* ── Account Row ──────────────────────────────────── */
+.account-row {
+    display: flex;
+    align-items: center;
+    padding: 0.8125rem 1.25rem;
+    gap: 0.875rem;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background 0.12s;
+}
+
+.account-row:last-child { border-bottom: none; }
+.account-row:hover { background: #fafafa; }
+
+/* Indent accounts visually */
+.account-row { padding-left: 1.625rem; }
+
+/* ── Account Icon ─────────────────────────────────── */
+.acct-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* ── Account Info ─────────────────────────────────── */
+.acct-info { flex: 1; min-width: 0; }
+
+.acct-name {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #111827;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.acct-official {
+    display: block;
+    font-size: 0.725rem;
+    color: #9ca3af;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 0.05rem;
+}
+
+.acct-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.25rem;
+    flex-wrap: wrap;
+}
+
+.acct-mask {
+    font-size: 0.78125rem;
+    color: #9ca3af;
+    letter-spacing: 0.02em;
+}
+
+/* ── Type Chips ───────────────────────────────────── */
+.chip {
+    display: inline-block;
+    padding: 0.1rem 0.45rem;
+    border-radius: 20px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.chip-checking   { background: #dbeafe; color: #1d4ed8; }
+.chip-savings    { background: #d1fae5; color: #065f46; }
+.chip-depository { background: #dbeafe; color: #1d4ed8; }
+.chip-credit     { background: #fee2e2; color: #dc2626; }
+.chip-investment { background: #dcfce7; color: #166534; }
+.chip-loan       { background: #fef3c7; color: #d97706; }
+.chip-mortgage   { background: #fef3c7; color: #d97706; }
+.chip-other      { background: #f3f4f6; color: #4b5563; }
+
+/* ── Account Right (balance + actions) ───────────── */
+.acct-right {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    flex-shrink: 0;
+}
+
+.acct-balance { text-align: right; min-width: 88px; }
+
+.bal-current {
+    display: block;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1.2;
+}
+
+.bal-available {
+    display: block;
+    font-size: 0.71875rem;
+    color: #9ca3af;
+    margin-top: 0.15rem;
+}
+
+/* ── Trash Button ─────────────────────────────────── */
+.trash-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    background: transparent;
+    border: 1.5px solid transparent;
+    border-radius: 7px;
+    color: #9ca3af;
+    cursor: pointer;
+    transition: color 0.13s, background 0.13s, border-color 0.13s;
+    flex-shrink: 0;
+}
+
+.trash-btn:hover {
+    color: #dc2626;
+    background: #fef2f2;
+    border-color: #fca5a5;
+}
+
+/* ── Inline Delete Confirm ────────────────────────── */
+.delete-confirm {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    animation: slideIn 0.15s ease;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(6px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+.confirm-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #dc2626;
+    white-space: nowrap;
+}
+
+.confirm-yes {
+    width: 26px;
+    height: 26px;
+    background: #dc2626;
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.13s;
+}
+
+.confirm-yes:hover { background: #b91c1c; }
+
+.confirm-no {
+    width: 26px;
+    height: 26px;
+    background: transparent;
+    border: 1.5px solid #d1d5db;
+    border-radius: 6px;
+    color: #374151;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.13s;
+}
+
+.confirm-no:hover { background: #f3f4f6; }

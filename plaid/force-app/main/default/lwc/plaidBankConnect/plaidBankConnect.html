@@ -1,0 +1,173 @@
+<template>
+    <lightning-card>
+        <div class="slds-p-around_medium plaid-wrapper">
+
+            <!-- Loading -->
+            <template if:true={isLoading}>
+                <div class="loading-container">
+                    <lightning-spinner alternative-text="Loading" size="medium" variant="brand"></lightning-spinner>
+                </div>
+            </template>
+
+            <template if:false={isLoading}>
+
+                <!-- ── Header ──────────────────────────────── -->
+                <div class="page-header">
+                    <div class="header-left">
+                        <div class="header-icon">🏦</div>
+                        <div>
+                            <p class="header-label">Total Portfolio Balance</p>
+                            <template if:true={isConnected}>
+                                <h2 class="header-total">{grandTotal}</h2>
+                                <p class="header-sub">{totalAccountCount} account(s) · {connections.length} bank(s)</p>
+                            </template>
+                            <template if:false={isConnected}>
+                                <h2 class="header-total">$0.00</h2>
+                                <p class="header-sub">No banks linked yet</p>
+                            </template>
+                        </div>
+                    </div>
+                    <button class="header-add-btn" onclick={handleConnectBank}>
+                        + {connectButtonLabel}
+                    </button>
+                </div>
+
+                <!-- ── Error ───────────────────────────────── -->
+                <template if:true={error}>
+                    <div class="error-banner" role="alert">
+                        <lightning-icon icon-name="utility:error" size="x-small"></lightning-icon>
+                        <span>{error}</span>
+                        <button class="error-close" onclick={clearError}>✕</button>
+                    </div>
+                </template>
+
+                <!-- ── Empty State ─────────────────────────── -->
+                <template if:false={isConnected}>
+                    <div class="empty-state">
+                        <div class="empty-icon">💳</div>
+                        <h2 class="empty-title">No Bank Accounts Connected</h2>
+                        <p class="empty-desc">
+                            Securely link your bank to view real-time balances — right inside Salesforce.
+                        </p>
+                        <button class="empty-btn" onclick={handleConnectBank}>
+                            Connect Your First Bank
+                        </button>
+                    </div>
+                </template>
+
+                <!-- ── Bank Cards ──────────────────────────── -->
+                <template for:each={connections} for:item="connection">
+                    <div key={connection.groupKey} class="bank-card">
+
+                        <!-- ── Bank Header ─────────────────── -->
+                        <div class={connection.headerClass}
+                             data-group-key={connection.groupKey}
+                             onclick={handleToggle}>
+
+                            <!-- Avatar + Info -->
+                            <div class="bank-avatar" style={connection.avatarStyle}>
+                                {connection.institutionInitial}
+                            </div>
+                            <div class="bank-info">
+                                <h3 class="bank-name">{connection.institutionName}</h3>
+                                <p class="bank-count">{connection.accountCount} Account(s)</p>
+                            </div>
+
+                            <!-- Bank-level Remove / Confirm -->
+                            <div class="bank-actions">
+                                <template if:false={connection.confirmingBankRemove}>
+                                    <button class="bank-remove-btn"
+                                        data-group-key={connection.groupKey}
+                                        onclick={handleBankRemoveClick}
+                                        title="Remove all accounts for this bank">
+                                        Remove Bank
+                                    </button>
+                                </template>
+                                <template if:true={connection.confirmingBankRemove}>
+                                    <div class="bank-confirm-row">
+                                        <span class="confirm-label">Remove all?</span>
+                                        <button class="confirm-yes"
+                                            data-group-key={connection.groupKey}
+                                            onclick={handleBankConfirmRemove}>✓</button>
+                                        <button class="confirm-no"
+                                            data-group-key={connection.groupKey}
+                                            onclick={handleBankCancelRemove}>✕</button>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <!-- Chevron -->
+                            <div class={connection.chevronClass}>
+                                <lightning-icon icon-name="utility:chevrondown"
+                                    size="x-small" variant="bare">
+                                </lightning-icon>
+                            </div>
+
+                        </div>
+
+                        <!-- ── Account Rows (collapsible) ──── -->
+                        <div class={connection.accountsWrapClass}>
+                            <template for:each={connection.accounts} for:item="account">
+                                <div key={account.accountId} class="account-row">
+
+                                    <div class="acct-icon" style={account.iconStyle}>
+                                        <lightning-icon icon-name={account.iconName}
+                                            size="x-small" variant="inverse">
+                                        </lightning-icon>
+                                    </div>
+
+                                    <div class="acct-info">
+                                        <span class="acct-name">{account.name}</span>
+                                        <template if:true={account.officialName}>
+                                            <span class="acct-official">{account.officialName}</span>
+                                        </template>
+                                        <div class="acct-meta">
+                                            <span class="acct-mask">••••{account.mask}</span>
+                                            <span class={account.chipClass}>{account.subtype}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="acct-right">
+                                        <div class="acct-balance">
+                                            <span class="bal-current">{account.formattedCurrentBalance}</span>
+                                            <span class="bal-available">Avail: {account.formattedAvailableBalance}</span>
+                                        </div>
+
+                                        <!-- Account trash / confirm -->
+                                        <template if:false={account.confirmingDelete}>
+                                            <button class="trash-btn"
+                                                data-group-key={connection.groupKey}
+                                                data-account-id={account.accountId}
+                                                onclick={handleDeleteClick}
+                                                title="Remove this account">
+                                                <lightning-icon icon-name="utility:delete"
+                                                    size="x-small">
+                                                </lightning-icon>
+                                            </button>
+                                        </template>
+                                        <template if:true={account.confirmingDelete}>
+                                            <div class="delete-confirm">
+                                                <span class="confirm-label">Remove?</span>
+                                                <button class="confirm-yes"
+                                                    data-group-key={connection.groupKey}
+                                                    data-account-id={account.accountId}
+                                                    onclick={handleConfirmDelete}>✓</button>
+                                                <button class="confirm-no"
+                                                    data-group-key={connection.groupKey}
+                                                    data-account-id={account.accountId}
+                                                    onclick={handleCancelDelete}>✕</button>
+                                            </div>
+                                        </template>
+                                    </div>
+
+                                </div>
+                            </template>
+                        </div>
+
+                    </div>
+                </template>
+
+            </template>
+        </div>
+    </lightning-card>
+</template>
