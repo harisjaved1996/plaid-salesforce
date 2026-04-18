@@ -47,6 +47,25 @@ public with sharing class PlaidService {
         return callPlaid('/accounts/get', body);
     }
 
+    public static Map<String, Object> syncTransactions(String accessToken, String cursor) {
+        Map<String, Object> body = new Map<String, Object>{
+            'client_id'    => CLIENT_ID,
+            'secret'       => SECRET,
+            'access_token' => accessToken,
+            'count'        => 500,
+            'options'      => new Map<String, Object>{
+                'include_personal_finance_category' => true
+            }
+        };
+
+        System.debug(JSON.serialize(body));
+
+        if (String.isNotBlank(cursor)) {
+            body.put('cursor', cursor);
+        }
+        return callPlaid('/transactions/sync', body);
+    }
+
     public static Map<String, Object> removeItem(String accessToken) {
         Map<String, Object> body = new Map<String, Object>{
             'client_id' => CLIENT_ID,

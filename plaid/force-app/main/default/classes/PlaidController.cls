@@ -99,6 +99,74 @@ public with sharing class PlaidController {
         }
     }
 
+    @AuraEnabled
+    public static List<Map<String, Object>> getTransactions(String connectionId, String accountId) {
+        try {
+            String userId = UserInfo.getUserId();
+            Plaid_Connection__c conn = [
+                SELECT Id, Access_Token__c
+                FROM Plaid_Connection__c
+                WHERE Id = :connectionId AND User__c = :userId AND Status__c = 'Active'
+                LIMIT 1
+            ];
+
+            // transactions/sync does not support account_ids filtering — fetch all and filter here
+            List<Map<String, Object>> allTransactions = new List<Map<String, Object>>();
+            String cursor  = null;
+            Boolean hasMore = true;
+            Integer maxCallouts = 5;
+
+            while (hasMore && maxCallouts > 0) {
+                Map<String, Object> response = PlaidService.syncTransactions(conn.Access_Token__c, cursor);
+                List<Object> added = (List<Object>) response.get('added');
+                if (added != null) {
+                    for (Object raw : added) {
+                        Map<String, Object> txn = (Map<String, Object>) raw;
+                        if (String.isBlank(accountId) || accountId.equals((String) txn.get('account_id'))) {
+                            allTransactions.add(txn);
+                        }
+                    }
+                }
+                cursor  = (String) response.get('next_cursor');
+                Object hm = response.get('has_more');
+                hasMore = (hm instanceof Boolean) && (Boolean) hm;
+                maxCallouts--;
+            }
+
+            List<TxnWrapper> wrapped = new List<TxnWrapper>();
+            for (Map<String, Object> t : allTransactions) {
+                wrapped.add(new TxnWrapper(t));
+            }
+            wrapped.sort();
+
+            List<Map<String, Object>> sorted = new List<Map<String, Object>>();
+            for (TxnWrapper w : wrapped) {
+                sorted.add(w.data);
+            }
+            return sorted;
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    private class TxnWrapper implements Comparable {
+        public Map<String, Object> data;
+        private Date txnDate;
+
+        public TxnWrapper(Map<String, Object> d) {
+            this.data = d;
+            String ds = (String) d.get('date');
+            this.txnDate = String.isNotBlank(ds) ? Date.valueOf(ds) : Date.newInstance(1900, 1, 1);
+        }
+
+        public Integer compareTo(Object other) {
+            TxnWrapper o = (TxnWrapper) other;
+            if (this.txnDate > o.txnDate) return -1;
+            if (this.txnDate < o.txnDate) return 1;
+            return 0;
+        }
+    }
+
     @AuraEnabled(cacheable=true)
     public static Boolean hasActiveConnection() {
         String userId = UserInfo.getUserId();

@@ -2,6 +2,18 @@
 <FlexiPage xmlns="http://soap.sforce.com/2006/04/metadata">
     <description>Plaid Hub Lightning App Page</description>
     <flexiPageRegions>
+        <itemInstances>
+            <componentInstance>
+                <componentName>plaidBankConnect</componentName>
+                <identifier>c_plaidBankConnect</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentName>plaidTransactions</componentName>
+                <identifier>c_plaidTransactions</identifier>
+            </componentInstance>
+        </itemInstances>
         <name>main</name>
         <type>Region</type>
     </flexiPageRegions>

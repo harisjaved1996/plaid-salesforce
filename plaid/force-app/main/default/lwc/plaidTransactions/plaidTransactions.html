@@ -1,0 +1,403 @@
+<template>
+    <lightning-card>
+        <div class="slds-p-around_medium txn-wrapper">
+
+            <!-- Loading -->
+            <template if:true={isLoading}>
+                <div class="loading-container">
+                    <lightning-spinner alternative-text="Loading" size="medium" variant="brand"></lightning-spinner>
+                </div>
+            </template>
+
+            <!-- Header -->
+            <div class="page-header">
+                <div class="header-left">
+                    <div class="header-icon">💳</div>
+                    <div>
+                        <p class="header-label">Transaction Explorer</p>
+                        <h2 class="header-title">View Account Transactions</h2>
+                        <p class="header-sub">Select a bank and account to load transactions via Plaid</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error -->
+            <template if:true={error}>
+                <div class="error-banner" role="alert">
+                    <lightning-icon icon-name="utility:error" size="x-small"></lightning-icon>
+                    <span>{error}</span>
+                    <button class="error-close" onclick={clearError}>✕</button>
+                </div>
+            </template>
+
+            <!-- Selectors -->
+            <div class="selector-card">
+                <div class="selector-row">
+                    <div class="selector-field">
+                        <lightning-combobox
+                            label="Bank"
+                            value={selectedBank}
+                            options={bankOptions}
+                            placeholder="-- Select a Bank --"
+                            onchange={handleBankChange}
+                            disabled={isLoading}>
+                        </lightning-combobox>
+                    </div>
+                    <div class="selector-field">
+                        <lightning-combobox
+                            label="Account"
+                            value={selectedAccountId}
+                            options={accountOptions}
+                            placeholder="-- Select an Account --"
+                            onchange={handleAccountChange}
+                            disabled={isAccountDisabled}>
+                        </lightning-combobox>
+                    </div>
+                    <div class="selector-action">
+                        <lightning-button
+                            label="Show Transactions"
+                            variant="brand"
+                            icon-name="utility:search"
+                            icon-position="left"
+                            onclick={handleShowTransactions}
+                            disabled={isShowDisabled}>
+                        </lightning-button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- No banks connected -->
+            <template if:true={noBanksConnected}>
+                <div class="empty-state">
+                    <div class="empty-icon">🏦</div>
+                    <h3 class="empty-title">No Banks Connected</h3>
+                    <p class="empty-desc">Connect a bank account first using the bank connector above.</p>
+                </div>
+            </template>
+
+            <!-- Transactions Table -->
+            <template if:true={hasTransactions}>
+                <div class="txn-table-section">
+                    <div class="txn-table-header">
+                        <div class="txn-table-title-row">
+                            <h3 class="txn-table-title">Transactions</h3>
+                            <span class="txn-count-badge">{totalCount} total</span>
+                        </div>
+                        <p class="txn-table-sub">
+                            Showing {pageStart}–{pageEnd} of {totalCount} &nbsp;·&nbsp; Click a row for full details
+                        </p>
+                    </div>
+
+                    <div class="txn-table-wrap">
+                        <table class="txn-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Name</th>
+                                    <th>Merchant</th>
+                                    <th>Category</th>
+                                    <th>Channel</th>
+                                    <th class="col-amount">Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template for:each={pagedTransactions} for:item="txn">
+                                    <tr key={txn.transaction_id}
+                                        class="txn-row"
+                                        data-txn-id={txn.transaction_id}
+                                        onclick={handleRowClick}>
+                                        <td class="col-date">{txn.date}</td>
+                                        <td class="col-name">
+                                            <div class="name-cell">
+                                                <template if:true={txn.logo_url}>
+                                                    <img class="merchant-logo" src={txn.logo_url} alt="" />
+                                                </template>
+                                                <span class="txn-name-text">{txn.name}</span>
+                                            </div>
+                                        </td>
+                                        <td>{txn.merchant_name}</td>
+                                        <td>
+                                            <template if:true={txn.primaryCategory}>
+                                                <span class="cat-badge">{txn.primaryCategory}</span>
+                                            </template>
+                                        </td>
+                                        <td class="col-channel">{txn.payment_channel}</td>
+                                        <td class="col-amount">
+                                            <span class={txn.amountClass}>{txn.formattedAmount}</span>
+                                        </td>
+                                        <td>
+                                            <template if:true={txn.pending}>
+                                                <span class="status-badge status-pending">Pending</span>
+                                            </template>
+                                            <template if:false={txn.pending}>
+                                                <span class="status-badge status-posted">Posted</span>
+                                            </template>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div class="pagination">
+                        <button class="page-btn" onclick={handlePrevPage} disabled={isFirstPage}>
+                            ‹ Prev
+                        </button>
+                        <span class="page-info">Page {currentPage} of {totalPages}</span>
+                        <button class="page-btn" onclick={handleNextPage} disabled={isLastPage}>
+                            Next ›
+                        </button>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Empty result after search -->
+            <template if:true={showEmptyResult}>
+                <div class="empty-state">
+                    <div class="empty-icon">🔍</div>
+                    <h3 class="empty-title">No Transactions Found</h3>
+                    <p class="empty-desc">There are no transactions available for this account.</p>
+                </div>
+            </template>
+
+        </div>
+    </lightning-card>
+
+    <!-- Transaction Detail Modal -->
+    <template if:true={selectedTransaction}>
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open" aria-modal="true">
+            <div class="slds-modal__container modal-container">
+
+                <!-- Modal Header -->
+                <header class="slds-modal__header modal-header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                        onclick={handleCloseModal} title="Close">
+                        <lightning-icon icon-name="utility:close" alternative-text="Close"
+                            size="small" variant="inverse"></lightning-icon>
+                    </button>
+                    <div class="modal-hero">
+                        <template if:true={selectedTransaction.logo_url}>
+                            <img class="modal-logo" src={selectedTransaction.logo_url} alt="" />
+                        </template>
+                        <div>
+                            <h2 class="slds-modal__title modal-txn-name">{selectedTransaction.name}</h2>
+                            <p class="modal-txn-date">{selectedTransaction.date}</p>
+                        </div>
+                        <div class="modal-amount-block">
+                            <span class={selectedTransaction.amountClass}>{selectedTransaction.formattedAmount}</span>
+                            <template if:true={selectedTransaction.pending}>
+                                <span class="status-badge status-pending">Pending</span>
+                            </template>
+                            <template if:false={selectedTransaction.pending}>
+                                <span class="status-badge status-posted">Posted</span>
+                            </template>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- Modal Body -->
+                <div class="slds-modal__content slds-p-around_medium modal-body">
+
+                    <!-- Core Details -->
+                    <div class="modal-section">
+                        <h3 class="modal-section-title">Transaction Details</h3>
+                        <div class="modal-grid">
+                            <div class="modal-field">
+                                <span class="modal-label">Transaction ID</span>
+                                <span class="modal-value mono">{selectedTransaction.transaction_id}</span>
+                            </div>
+                            <div class="modal-field">
+                                <span class="modal-label">Account ID</span>
+                                <span class="modal-value mono">{selectedTransaction.account_id}</span>
+                            </div>
+                            <div class="modal-field">
+                                <span class="modal-label">Date</span>
+                                <span class="modal-value">{selectedTransaction.date}</span>
+                            </div>
+                            <div class="modal-field">
+                                <span class="modal-label">Authorized Date</span>
+                                <span class="modal-value">{selectedTransaction.authorized_date}</span>
+                            </div>
+                            <div class="modal-field">
+                                <span class="modal-label">Name</span>
+                                <span class="modal-value">{selectedTransaction.name}</span>
+                            </div>
+                            <div class="modal-field">
+                                <span class="modal-label">Merchant Name</span>
+                                <span class="modal-value">{selectedTransaction.merchant_name}</span>
+                            </div>
+                            <div class="modal-field">
+                                <span class="modal-label">Amount</span>
+                                <span class={selectedTransaction.amountClass}>{selectedTransaction.formattedAmount}</span>
+                            </div>
+                            <div class="modal-field">
+                                <span class="modal-label">Currency</span>
+                                <span class="modal-value">{selectedTransaction.iso_currency_code}</span>
+                            </div>
+                            <div class="modal-field">
+                                <span class="modal-label">Payment Channel</span>
+                                <span class="modal-value">{selectedTransaction.payment_channel}</span>
+                            </div>
+                            <div class="modal-field">
+                                <span class="modal-label">Transaction Type</span>
+                                <span class="modal-value">{selectedTransaction.transaction_type}</span>
+                            </div>
+                            <div class="modal-field">
+                                <span class="modal-label">Transaction Code</span>
+                                <span class="modal-value">{selectedTransaction.transaction_code}</span>
+                            </div>
+                            <div class="modal-field">
+                                <span class="modal-label">Check Number</span>
+                                <span class="modal-value">{selectedTransaction.check_number}</span>
+                            </div>
+                            <div class="modal-field">
+                                <span class="modal-label">Account Owner</span>
+                                <span class="modal-value">{selectedTransaction.account_owner}</span>
+                            </div>
+                            <div class="modal-field">
+                                <span class="modal-label">Merchant Website</span>
+                                <span class="modal-value">{selectedTransaction.website}</span>
+                            </div>
+                            <div class="modal-field">
+                                <span class="modal-label">Pending Transaction ID</span>
+                                <span class="modal-value mono">{selectedTransaction.pending_transaction_id}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category -->
+                    <div class="modal-section">
+                        <h3 class="modal-section-title">Category</h3>
+                        <div class="modal-grid">
+                            <div class="modal-field">
+                                <span class="modal-label">Primary</span>
+                                <span class="modal-value">{selectedTransaction.primaryCategory}</span>
+                            </div>
+                            <div class="modal-field">
+                                <span class="modal-label">Detailed</span>
+                                <span class="modal-value">{selectedTransaction.detailedCategory}</span>
+                            </div>
+                            <div class="modal-field">
+                                <span class="modal-label">Confidence</span>
+                                <span class="modal-value">{selectedTransaction.categoryConfidence}</span>
+                            </div>
+                            <div class="modal-field">
+                                <span class="modal-label">Legacy Category</span>
+                                <span class="modal-value">{selectedTransaction.legacyCategory}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Location -->
+                    <template if:true={selectedTransaction.hasLocation}>
+                        <div class="modal-section">
+                            <h3 class="modal-section-title">Location</h3>
+                            <div class="modal-grid">
+                                <div class="modal-field">
+                                    <span class="modal-label">Address</span>
+                                    <span class="modal-value">{selectedTransaction.locationAddress}</span>
+                                </div>
+                                <div class="modal-field">
+                                    <span class="modal-label">City</span>
+                                    <span class="modal-value">{selectedTransaction.locationCity}</span>
+                                </div>
+                                <div class="modal-field">
+                                    <span class="modal-label">State / Region</span>
+                                    <span class="modal-value">{selectedTransaction.locationRegion}</span>
+                                </div>
+                                <div class="modal-field">
+                                    <span class="modal-label">Postal Code</span>
+                                    <span class="modal-value">{selectedTransaction.locationPostalCode}</span>
+                                </div>
+                                <div class="modal-field">
+                                    <span class="modal-label">Country</span>
+                                    <span class="modal-value">{selectedTransaction.locationCountry}</span>
+                                </div>
+                                <div class="modal-field">
+                                    <span class="modal-label">Store Number</span>
+                                    <span class="modal-value">{selectedTransaction.locationStoreNumber}</span>
+                                </div>
+                                <div class="modal-field">
+                                    <span class="modal-label">Coordinates</span>
+                                    <span class="modal-value">{selectedTransaction.locationCoords}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Payment Meta -->
+                    <template if:true={selectedTransaction.hasPaymentMeta}>
+                        <div class="modal-section">
+                            <h3 class="modal-section-title">Payment Meta</h3>
+                            <div class="modal-grid">
+                                <div class="modal-field">
+                                    <span class="modal-label">Reference Number</span>
+                                    <span class="modal-value">{selectedTransaction.pmReferenceNumber}</span>
+                                </div>
+                                <div class="modal-field">
+                                    <span class="modal-label">PPD ID</span>
+                                    <span class="modal-value">{selectedTransaction.pmPpdId}</span>
+                                </div>
+                                <div class="modal-field">
+                                    <span class="modal-label">Payee</span>
+                                    <span class="modal-value">{selectedTransaction.pmPayee}</span>
+                                </div>
+                                <div class="modal-field">
+                                    <span class="modal-label">Payer</span>
+                                    <span class="modal-value">{selectedTransaction.pmPayer}</span>
+                                </div>
+                                <div class="modal-field">
+                                    <span class="modal-label">Payment Method</span>
+                                    <span class="modal-value">{selectedTransaction.pmPaymentMethod}</span>
+                                </div>
+                                <div class="modal-field">
+                                    <span class="modal-label">Payment Processor</span>
+                                    <span class="modal-value">{selectedTransaction.pmPaymentProcessor}</span>
+                                </div>
+                                <div class="modal-field">
+                                    <span class="modal-label">Reason</span>
+                                    <span class="modal-value">{selectedTransaction.pmReason}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Counterparties -->
+                    <template if:true={selectedTransaction.hasCounterparties}>
+                        <div class="modal-section">
+                            <h3 class="modal-section-title">Counterparties</h3>
+                            <template for:each={selectedTransaction.counterpartiesDisplay} for:item="cp">
+                                <div key={cp._key} class="counterparty-row">
+                                    <template if:true={cp.logo_url}>
+                                        <img class="cp-logo" src={cp.logo_url} alt="" />
+                                    </template>
+                                    <div class="cp-info">
+                                        <span class="cp-name">{cp.name}</span>
+                                        <span class="cp-type">{cp.type}</span>
+                                        <template if:true={cp.website}>
+                                            <span class="cp-website">{cp.website}</span>
+                                        </template>
+                                        <template if:true={cp.phone_number}>
+                                            <span class="cp-phone">{cp.phone_number}</span>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
+                </div>
+
+                <!-- Modal Footer -->
+                <footer class="slds-modal__footer modal-footer">
+                    <lightning-button label="Close" onclick={handleCloseModal}></lightning-button>
+                </footer>
+
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+</template>
