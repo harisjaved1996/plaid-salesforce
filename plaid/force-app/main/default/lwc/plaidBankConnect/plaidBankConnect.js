@@ -68,6 +68,8 @@ function enrichAccount(raw) {
         chipClass:                 CHIPS[subtype] || CHIPS[type] || 'chip chip-other',
         formattedCurrentBalance:   raw.currentBalance   != null ? USD.format(raw.currentBalance)   : '—',
         formattedAvailableBalance: raw.availableBalance != null ? USD.format(raw.availableBalance) : '—',
+        formattedLimitBalance:     raw.limit            != null ? USD.format(raw.limit)            : '—',
+        currencyCode:              raw.isoCurrencyCode || raw.unofficialCurrencyCode || 'USD',
         confirmingDelete: false,
     };
 }
@@ -82,9 +84,10 @@ function cardClasses(isExpanded) {
 
 // ── Component ─────────────────────────────────────────────────
 export default class PlaidBankConnect extends LightningElement {
-    @track connections = [];
-    @track isLoading   = true;
-    @track error       = null;
+    @track connections     = [];
+    @track isLoading       = true;
+    @track error           = null;
+    @track selectedAccount = null;
 
     _plaidInitialized = false;
 
@@ -270,8 +273,23 @@ export default class PlaidBankConnect extends LightningElement {
         }
     }
 
+    // ── Account Detail Modal ──────────────────────────────────
+    handleGetAccount(event) {
+        event.stopPropagation();
+        const { groupKey, accountId } = event.currentTarget.dataset;
+        const group   = this.connections.find(c => c.groupKey === groupKey);
+        const account = group?.accounts.find(a => a.accountId === accountId);
+        if (account) this.selectedAccount = account;
+    }
+
+    handleCloseModal() {
+        this.selectedAccount = null;
+    }
+
     // ── Getters ───────────────────────────────────────────────
     get isConnected() { return this.connections && this.connections.length > 0; }
+
+    get hasSelectedAccount() { return !!this.selectedAccount; }
 
     get connectButtonLabel() { return this.isConnected ? 'Add Another Bank' : 'Connect Bank'; }
 

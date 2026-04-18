@@ -133,6 +133,15 @@
                                             <span class="bal-available">Avail: {account.formattedAvailableBalance}</span>
                                         </div>
 
+                                        <!-- Get Account button -->
+                                        <button class="get-account-btn"
+                                            data-group-key={connection.groupKey}
+                                            data-account-id={account.accountId}
+                                            onclick={handleGetAccount}
+                                            title="View account details">
+                                            Get Account
+                                        </button>
+
                                         <!-- Account trash / confirm -->
                                         <template if:false={account.confirmingDelete}>
                                             <button class="trash-btn"
@@ -164,6 +173,109 @@
                             </template>
                         </div>
 
+                    </div>
+                </template>
+
+                <!-- ── Account Detail Modal ───────────────────────── -->
+                <template if:true={hasSelectedAccount}>
+                    <div class="acct-modal-backdrop" onclick={handleCloseModal}></div>
+                    <div class="acct-modal" role="dialog" aria-modal="true" aria-label="Account Details">
+                        <!-- Modal Header -->
+                        <div class="acct-modal-header">
+                            <div class="acct-modal-header-left">
+                                <div class="acct-modal-icon" style={selectedAccount.iconStyle}>
+                                    <lightning-icon icon-name={selectedAccount.iconName}
+                                        size="small" variant="inverse">
+                                    </lightning-icon>
+                                </div>
+                                <div>
+                                    <h2 class="acct-modal-title">{selectedAccount.name}</h2>
+                                    <template if:true={selectedAccount.officialName}>
+                                        <p class="acct-modal-subtitle">{selectedAccount.officialName}</p>
+                                    </template>
+                                    <span class={selectedAccount.chipClass}>{selectedAccount.subtype}</span>
+                                </div>
+                            </div>
+                            <button class="acct-modal-close" onclick={handleCloseModal} title="Close">✕</button>
+                        </div>
+
+                        <!-- Modal Body -->
+                        <div class="acct-modal-body">
+
+                            <!-- Account Info Section -->
+                            <div class="acct-modal-section">
+                                <h3 class="acct-modal-section-title">Account Information</h3>
+                                <div class="acct-modal-grid">
+                                    <div class="acct-modal-field">
+                                        <span class="acct-modal-label">Account ID</span>
+                                        <span class="acct-modal-value acct-modal-mono">{selectedAccount.accountId}</span>
+                                    </div>
+                                    <div class="acct-modal-field">
+                                        <span class="acct-modal-label">Account Name</span>
+                                        <span class="acct-modal-value">{selectedAccount.name}</span>
+                                    </div>
+                                    <template if:true={selectedAccount.officialName}>
+                                        <div class="acct-modal-field">
+                                            <span class="acct-modal-label">Official Name</span>
+                                            <span class="acct-modal-value">{selectedAccount.officialName}</span>
+                                        </div>
+                                    </template>
+                                    <div class="acct-modal-field">
+                                        <span class="acct-modal-label">Account Type</span>
+                                        <span class="acct-modal-value acct-modal-capitalize">{selectedAccount.type}</span>
+                                    </div>
+                                    <div class="acct-modal-field">
+                                        <span class="acct-modal-label">Subtype</span>
+                                        <span class="acct-modal-value acct-modal-capitalize">{selectedAccount.subtype}</span>
+                                    </div>
+                                    <div class="acct-modal-field">
+                                        <span class="acct-modal-label">Account Mask</span>
+                                        <span class="acct-modal-value">••••{selectedAccount.mask}</span>
+                                    </div>
+                                    <div class="acct-modal-field">
+                                        <span class="acct-modal-label">Currency</span>
+                                        <span class="acct-modal-value">{selectedAccount.currencyCode}</span>
+                                    </div>
+                                    <template if:true={selectedAccount.verificationStatus}>
+                                        <div class="acct-modal-field">
+                                            <span class="acct-modal-label">Verification Status</span>
+                                            <span class="acct-modal-value acct-modal-capitalize">{selectedAccount.verificationStatus}</span>
+                                        </div>
+                                    </template>
+                                    <template if:true={selectedAccount.persistentAccountId}>
+                                        <div class="acct-modal-field acct-modal-field--full">
+                                            <span class="acct-modal-label">Persistent Account ID</span>
+                                            <span class="acct-modal-value acct-modal-mono">{selectedAccount.persistentAccountId}</span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <!-- Balances Section -->
+                            <div class="acct-modal-section">
+                                <h3 class="acct-modal-section-title">Balances</h3>
+                                <div class="acct-modal-balance-grid">
+                                    <div class="acct-modal-balance-card acct-modal-balance-card--current">
+                                        <span class="acct-modal-balance-label">Current Balance</span>
+                                        <span class="acct-modal-balance-amount">{selectedAccount.formattedCurrentBalance}</span>
+                                    </div>
+                                    <div class="acct-modal-balance-card acct-modal-balance-card--available">
+                                        <span class="acct-modal-balance-label">Available Balance</span>
+                                        <span class="acct-modal-balance-amount">{selectedAccount.formattedAvailableBalance}</span>
+                                    </div>
+                                    <div class="acct-modal-balance-card acct-modal-balance-card--limit">
+                                        <span class="acct-modal-balance-label">Credit / Loan Limit</span>
+                                        <span class="acct-modal-balance-amount">{selectedAccount.formattedLimitBalance}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Modal Footer -->
+                        <div class="acct-modal-footer">
+                            <button class="acct-modal-footer-btn" onclick={handleCloseModal}>Close</button>
+                        </div>
                     </div>
                 </template>
 

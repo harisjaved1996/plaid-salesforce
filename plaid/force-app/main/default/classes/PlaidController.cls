@@ -51,14 +51,19 @@ public with sharing class PlaidController {
                         Map<String, Object> acct = (Map<String, Object>) raw;
                         Map<String, Object> bal  = (Map<String, Object>) acct.get('balances');
                         accounts.add(new Map<String, Object>{
-                            'accountId'        => acct.get('account_id'),
-                            'name'             => acct.get('name'),
-                            'officialName'     => acct.get('official_name'),
-                            'type'             => acct.get('type'),
-                            'subtype'          => acct.get('subtype'),
-                            'mask'             => acct.get('mask'),
-                            'currentBalance'   => bal != null ? bal.get('current')   : null,
-                            'availableBalance' => bal != null ? bal.get('available') : null
+                            'accountId'              => acct.get('account_id'),
+                            'name'                   => acct.get('name'),
+                            'officialName'           => acct.get('official_name'),
+                            'type'                   => acct.get('type'),
+                            'subtype'                => acct.get('subtype'),
+                            'mask'                   => acct.get('mask'),
+                            'currentBalance'         => bal != null ? bal.get('current')                  : null,
+                            'availableBalance'       => bal != null ? bal.get('available')                : null,
+                            'limit'                  => bal != null ? bal.get('limit')                    : null,
+                            'isoCurrencyCode'        => bal != null ? bal.get('iso_currency_code')        : null,
+                            'unofficialCurrencyCode' => bal != null ? bal.get('unofficial_currency_code') : null,
+                            'persistentAccountId'    => acct.get('persistent_account_id'),
+                            'verificationStatus'     => acct.get('verification_status')
                         });
                     }
                 } catch (Exception ignored) {}
