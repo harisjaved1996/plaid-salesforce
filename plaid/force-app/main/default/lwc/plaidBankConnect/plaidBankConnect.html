@@ -142,6 +142,17 @@
                                             Get Account
                                         </button>
 
+                                        <!-- Get Identity button -->
+                                        <button class="get-identity-btn"
+                                            data-group-key={connection.groupKey}
+                                            data-account-id={account.accountId}
+                                            data-connection-id={account.connectionId}
+                                            onclick={handleGetIdentity}
+                                            title="View account owner identity">
+                                            <template if:true={isLoadingIdentity}>...</template>
+                                            <template if:false={isLoadingIdentity}>Get Identity</template>
+                                        </button>
+
                                         <!-- Account trash / confirm -->
                                         <template if:false={account.confirmingDelete}>
                                             <button class="trash-btn"
@@ -173,6 +184,126 @@
                             </template>
                         </div>
 
+                    </div>
+                </template>
+
+                <!-- ── Identity Modal ────────────────────────────── -->
+                <template if:true={hasIdentityData}>
+                    <div class="acct-modal-backdrop" onclick={handleCloseIdentityModal}></div>
+                    <div class="acct-modal id-modal" role="dialog" aria-modal="true" aria-label="Account Identity">
+
+                        <!-- Header -->
+                        <div class="acct-modal-header id-modal-header">
+                            <div class="acct-modal-header-left">
+                                <div class="id-modal-icon">
+                                    <lightning-icon icon-name="utility:contact" size="small" variant="inverse"></lightning-icon>
+                                </div>
+                                <div>
+                                    <h2 class="acct-modal-title">{identityData.accountName}</h2>
+                                    <p class="acct-modal-subtitle">Identity &amp; Ownership Details</p>
+                                </div>
+                            </div>
+                            <button class="acct-modal-close" onclick={handleCloseIdentityModal} title="Close">✕</button>
+                        </div>
+
+                        <!-- Body -->
+                        <div class="acct-modal-body">
+                            <template for:each={identityData.owners} for:item="owner">
+                                <div key={owner.ownerKey} class="id-owner-block">
+
+                                    <!-- Names -->
+                                    <div class="acct-modal-section">
+                                        <h3 class="acct-modal-section-title">Owner Name(s)</h3>
+                                        <template for:each={owner.names} for:item="nameItem">
+                                            <div key={nameItem.key} class="id-name-row">{nameItem.value}</div>
+                                        </template>
+                                    </div>
+
+                                    <!-- Emails -->
+                                    <template if:true={owner.emails.length}>
+                                        <div class="acct-modal-section">
+                                            <h3 class="acct-modal-section-title">Email Addresses</h3>
+                                            <div class="id-contact-grid">
+                                                <template for:each={owner.emails} for:item="email">
+                                                    <div key={email.key} class="id-contact-card">
+                                                        <div class="id-contact-icon id-contact-icon--email">
+                                                            <lightning-icon icon-name="utility:email" size="x-small" variant="inverse"></lightning-icon>
+                                                        </div>
+                                                        <div class="id-contact-info">
+                                                            <span class="id-contact-value">{email.data}</span>
+                                                            <span class="id-contact-meta">{email.type}</span>
+                                                        </div>
+                                                        <template if:true={email.primary}>
+                                                            <span class="id-primary-badge">Primary</span>
+                                                        </template>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <!-- Phone Numbers -->
+                                    <template if:true={owner.phones.length}>
+                                        <div class="acct-modal-section">
+                                            <h3 class="acct-modal-section-title">Phone Numbers</h3>
+                                            <div class="id-contact-grid">
+                                                <template for:each={owner.phones} for:item="phone">
+                                                    <div key={phone.key} class="id-contact-card">
+                                                        <div class="id-contact-icon id-contact-icon--phone">
+                                                            <lightning-icon icon-name="utility:call" size="x-small" variant="inverse"></lightning-icon>
+                                                        </div>
+                                                        <div class="id-contact-info">
+                                                            <span class="id-contact-value">{phone.data}</span>
+                                                            <span class="id-contact-meta">{phone.type}</span>
+                                                        </div>
+                                                        <template if:true={phone.primary}>
+                                                            <span class="id-primary-badge">Primary</span>
+                                                        </template>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <!-- Addresses -->
+                                    <template if:true={owner.addresses.length}>
+                                        <div class="acct-modal-section">
+                                            <h3 class="acct-modal-section-title">Addresses</h3>
+                                            <div class="id-address-list">
+                                                <template for:each={owner.addresses} for:item="addr">
+                                                    <div key={addr.key} class="id-address-card">
+                                                        <div class="id-address-icon">
+                                                            <lightning-icon icon-name="utility:location" size="x-small" variant="inverse"></lightning-icon>
+                                                        </div>
+                                                        <div class="id-address-info">
+                                                            <template if:true={addr.street}>
+                                                                <span class="id-address-street">{addr.street}</span>
+                                                            </template>
+                                                            <span class="id-address-line">
+                                                                {addr.city}<template if:true={addr.region}>, {addr.region}</template>
+                                                                <template if:true={addr.postalCode}> {addr.postalCode}</template>
+                                                            </span>
+                                                            <template if:true={addr.country}>
+                                                                <span class="id-address-country">{addr.country}</span>
+                                                            </template>
+                                                        </div>
+                                                        <template if:true={addr.primary}>
+                                                            <span class="id-primary-badge">Primary</span>
+                                                        </template>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Footer -->
+                        <div class="acct-modal-footer">
+                            <button class="acct-modal-footer-btn" onclick={handleCloseIdentityModal}>Close</button>
+                        </div>
                     </div>
                 </template>
 

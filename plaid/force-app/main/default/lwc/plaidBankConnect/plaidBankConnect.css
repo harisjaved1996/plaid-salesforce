@@ -504,6 +504,28 @@
     border-color: #3b82f6;
 }
 
+/* ── Get Identity Button ──────────────────────────── */
+.get-identity-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.28125rem 0.625rem;
+    background: transparent;
+    border: 1.5px solid #6ee7b7;
+    border-radius: 6px;
+    color: #065f46;
+    font-size: 0.71875rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background 0.13s, border-color 0.13s;
+}
+
+.get-identity-btn:hover {
+    background: #ecfdf5;
+    border-color: #34d399;
+}
+
 /* ── Account Detail Modal ─────────────────────────── */
 .acct-modal-backdrop {
     position: fixed;
@@ -727,3 +749,163 @@
 }
 
 .acct-modal-footer-btn:hover { background: #e5e7eb; }
+
+/* ── Identity Modal Overrides ─────────────────────── */
+.id-modal { max-width: 600px; }
+
+.id-modal-header {
+    background: linear-gradient(135deg, #064e3b 0%, #059669 100%);
+}
+
+.id-modal-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.2);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* ── Owner Block ──────────────────────────────────── */
+.id-owner-block {
+    padding-bottom: 0.5rem;
+}
+
+/* ── Name Row ─────────────────────────────────────── */
+.id-name-row {
+    display: inline-block;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: #111827;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    padding: 0.4rem 0.875rem;
+    margin: 0 0.375rem 0.375rem 0;
+}
+
+/* ── Contact Grid ─────────────────────────────────── */
+.id-contact-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.id-contact-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    background: #f9fafb;
+    border: 1px solid #f3f4f6;
+    border-radius: 8px;
+}
+
+.id-contact-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.id-contact-icon--email { background: linear-gradient(135deg,#0070d2,#005fb2); }
+.id-contact-icon--phone { background: linear-gradient(135deg,#059669,#047857); }
+
+.id-contact-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.05rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.id-contact-value {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #111827;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.id-contact-meta {
+    font-size: 0.6875rem;
+    color: #9ca3af;
+    text-transform: capitalize;
+}
+
+/* ── Primary Badge ────────────────────────────────── */
+.id-primary-badge {
+    display: inline-block;
+    padding: 0.1rem 0.45rem;
+    background: #d1fae5;
+    color: #065f46;
+    border-radius: 20px;
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* ── Address List ─────────────────────────────────── */
+.id-address-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.id-address-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.625rem 0.75rem;
+    background: #f9fafb;
+    border: 1px solid #f3f4f6;
+    border-radius: 8px;
+}
+
+.id-address-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: linear-gradient(135deg,#7c3aed,#4c1d95);
+    margin-top: 0.1rem;
+}
+
+.id-address-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.id-address-street {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #111827;
+}
+
+.id-address-line {
+    font-size: 0.78125rem;
+    color: #374151;
+}
+
+.id-address-country {
+    font-size: 0.71875rem;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}

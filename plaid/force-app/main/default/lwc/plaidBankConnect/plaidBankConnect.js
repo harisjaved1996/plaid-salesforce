@@ -7,6 +7,7 @@ import PLAID_SDK from '@salesforce/resourceUrl/PlaidSDK';
 import getLinkToken         from '@salesforce/apex/PlaidController.getLinkToken';
 import exchangePublicToken  from '@salesforce/apex/PlaidController.exchangePublicToken';
 import getConnectedAccounts from '@salesforce/apex/PlaidController.getConnectedAccounts';
+import getIdentity          from '@salesforce/apex/PlaidController.getIdentity';
 import disconnectBank       from '@salesforce/apex/PlaidController.disconnectBank';
 import hasActiveConnection  from '@salesforce/apex/PlaidController.hasActiveConnection';
 
@@ -84,10 +85,12 @@ function cardClasses(isExpanded) {
 
 // ── Component ─────────────────────────────────────────────────
 export default class PlaidBankConnect extends LightningElement {
-    @track connections     = [];
-    @track isLoading       = true;
-    @track error           = null;
-    @track selectedAccount = null;
+    @track connections      = [];
+    @track isLoading        = true;
+    @track error            = null;
+    @track selectedAccount  = null;
+    @track identityData     = null;
+    @track isLoadingIdentity = false;
 
     _plaidInitialized = false;
 
@@ -286,10 +289,48 @@ export default class PlaidBankConnect extends LightningElement {
         this.selectedAccount = null;
     }
 
+    // ── Identity Modal ────────────────────────────────────────
+    async handleGetIdentity(event) {
+        event.stopPropagation();
+        const { groupKey, accountId, connectionId } = event.currentTarget.dataset;
+        try {
+            this.isLoadingIdentity = true;
+            const raw = await getIdentity({ connectionId, accountId });
+
+            // Enrich owners with template-safe keys for iteration
+            const owners = (raw.owners || []).map((owner, oi) => ({
+                ownerKey: `owner-${oi}`,
+                names: (owner.names || []).map((name, ni) => ({ key: `n-${oi}-${ni}`, value: name })),
+                emails: (owner.emails || []).map((e, ei) => ({ ...e, key: `e-${oi}-${ei}` })),
+                phones: (owner.phones || []).map((p, pi) => ({ ...p, key: `p-${oi}-${pi}` })),
+                addresses: (owner.addresses || []).map((a, ai) => ({
+                    ...a,
+                    key: `a-${oi}-${ai}`,
+                    formatted: [a.street, a.city, a.region, a.postalCode, a.country].filter(Boolean).join(', '),
+                })),
+            }));
+
+            // Find account info from already-loaded connections for the header
+            const group   = this.connections.find(c => c.groupKey === groupKey);
+            const account = group?.accounts.find(a => a.accountId === accountId);
+
+            this.identityData = { ...raw, owners, account };
+        } catch (err) {
+            this._handleError(err);
+        } finally {
+            this.isLoadingIdentity = false;
+        }
+    }
+
+    handleCloseIdentityModal() {
+        this.identityData = null;
+    }
+
     // ── Getters ───────────────────────────────────────────────
     get isConnected() { return this.connections && this.connections.length > 0; }
 
-    get hasSelectedAccount() { return !!this.selectedAccount; }
+    get hasSelectedAccount()  { return !!this.selectedAccount; }
+    get hasIdentityData()     { return !!this.identityData; }
 
     get connectButtonLabel() { return this.isConnected ? 'Add Another Bank' : 'Connect Bank'; }
 

@@ -22,7 +22,7 @@ public with sharing class PlaidService {
             'secret' => SECRET,
             'client_name' => 'Plaid Salesforce Integration',
             'language' => 'en',
-            'products' => new List<String>{ 'transactions' },
+            'products' => new List<String>{ 'transactions', 'identity' },
             'country_codes' => new List<String>{ 'US' },
             'user' => new Map<String, Object>{ 'client_user_id' => userId }
         };
@@ -47,6 +47,15 @@ public with sharing class PlaidService {
         return callPlaid('/accounts/get', body);
     }
 
+    public static Map<String, Object> getIdentity(String accessToken) {
+        Map<String, Object> body = new Map<String, Object>{
+            'client_id'    => CLIENT_ID,
+            'secret'       => SECRET,
+            'access_token' => accessToken
+        };
+        return callPlaid('/identity/get', body);
+    }
+
     public static Map<String, Object> syncTransactions(String accessToken, String cursor) {
         Map<String, Object> body = new Map<String, Object>{
             'client_id'    => CLIENT_ID,
@@ -57,8 +66,6 @@ public with sharing class PlaidService {
                 'include_personal_finance_category' => true
             }
         };
-
-        System.debug(JSON.serialize(body));
 
         if (String.isNotBlank(cursor)) {
             body.put('cursor', cursor);
@@ -82,7 +89,7 @@ public with sharing class PlaidService {
         req.setHeader('Content-Type', 'application/json');
         req.setBody(JSON.serialize(body));
         req.setTimeout(30000);
-
+        system.debug(JSON.serialize(body));
         HttpResponse res = new Http().send(req);
         Map<String, Object> responseMap = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
 

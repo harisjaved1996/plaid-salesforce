@@ -82,6 +82,102 @@ public with sharing class PlaidController {
     }
 
     @AuraEnabled
+    public static Map<String, Object> getIdentity(String connectionId, String accountId) {
+        try {
+            String userId = UserInfo.getUserId();
+            Plaid_Connection__c conn = [
+                SELECT Id, Access_Token__c
+                FROM Plaid_Connection__c
+                WHERE Id = :connectionId AND User__c = :userId AND Status__c = 'Active'
+                LIMIT 1
+            ];
+
+            Map<String, Object> response = PlaidService.getIdentity(conn.Access_Token__c);
+            List<Object> accounts = (List<Object>) response.get('accounts');
+
+            for (Object rawAcct : accounts) {
+                Map<String, Object> acct = (Map<String, Object>) rawAcct;
+                if (!accountId.equals((String) acct.get('account_id'))) continue;
+
+                List<Object> rawOwners = (List<Object>) acct.get('owners');
+                List<Map<String, Object>> owners = new List<Map<String, Object>>();
+
+                if (rawOwners != null) {
+                    for (Object rawOwner : rawOwners) {
+                        Map<String, Object> owner = (Map<String, Object>) rawOwner;
+
+                        // Names
+                        List<String> names = new List<String>();
+                        List<Object> rawNames = (List<Object>) owner.get('names');
+                        if (rawNames != null) {
+                            for (Object n : rawNames) names.add((String) n);
+                        }
+
+                        // Emails
+                        List<Map<String, Object>> emails = new List<Map<String, Object>>();
+                        List<Object> rawEmails = (List<Object>) owner.get('emails');
+                        if (rawEmails != null) {
+                            for (Object re : rawEmails) {
+                                Map<String, Object> e = (Map<String, Object>) re;
+                                emails.add(new Map<String, Object>{
+                                    'data' => e.get('data'), 'primary' => e.get('primary'), 'type' => e.get('type')
+                                });
+                            }
+                        }
+
+                        // Phone numbers
+                        List<Map<String, Object>> phones = new List<Map<String, Object>>();
+                        List<Object> rawPhones = (List<Object>) owner.get('phone_numbers');
+                        if (rawPhones != null) {
+                            for (Object rp : rawPhones) {
+                                Map<String, Object> p = (Map<String, Object>) rp;
+                                phones.add(new Map<String, Object>{
+                                    'data' => p.get('data'), 'primary' => p.get('primary'), 'type' => p.get('type')
+                                });
+                            }
+                        }
+
+                        // Addresses
+                        List<Map<String, Object>> addresses = new List<Map<String, Object>>();
+                        List<Object> rawAddresses = (List<Object>) owner.get('addresses');
+                        if (rawAddresses != null) {
+                            for (Object ra : rawAddresses) {
+                                Map<String, Object> addr     = (Map<String, Object>) ra;
+                                Map<String, Object> addrData = (Map<String, Object>) addr.get('data');
+                                addresses.add(new Map<String, Object>{
+                                    'primary'    => addr.get('primary'),
+                                    'street'     => addrData != null ? addrData.get('street')      : null,
+                                    'city'       => addrData != null ? addrData.get('city')        : null,
+                                    'region'     => addrData != null ? addrData.get('region')      : null,
+                                    'postalCode' => addrData != null ? addrData.get('postal_code') : null,
+                                    'country'    => addrData != null ? addrData.get('country')     : null
+                                });
+                            }
+                        }
+
+                        owners.add(new Map<String, Object>{
+                            'names'     => names,
+                            'emails'    => emails,
+                            'phones'    => phones,
+                            'addresses' => addresses
+                        });
+                    }
+                }
+
+                return new Map<String, Object>{
+                    'accountId'   => acct.get('account_id'),
+                    'accountName' => acct.get('name'),
+                    'owners'      => owners
+                };
+            }
+
+            throw new AuraHandledException('Account not found in identity response.');
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    @AuraEnabled
     public static void disconnectBank(String connectionId) {
         try {
             String userId = UserInfo.getUserId();
