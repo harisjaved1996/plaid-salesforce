@@ -526,6 +526,28 @@
     border-color: #34d399;
 }
 
+/* ── Get Auth Button ──────────────────────────────── */
+.get-auth-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.28125rem 0.625rem;
+    background: transparent;
+    border: 1.5px solid #fcd34d;
+    border-radius: 6px;
+    color: #92400e;
+    font-size: 0.71875rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background 0.13s, border-color 0.13s;
+}
+
+.get-auth-btn:hover {
+    background: #fffbeb;
+    border-color: #f59e0b;
+}
+
 /* ── Account Detail Modal ─────────────────────────── */
 .acct-modal-backdrop {
     position: fixed;
@@ -908,4 +930,77 @@
     color: #9ca3af;
     text-transform: uppercase;
     letter-spacing: 0.04em;
+}
+
+/* ── Auth Modal Overrides ─────────────────────────── */
+.auth-modal { max-width: 560px; }
+
+.auth-modal-header {
+    background: linear-gradient(135deg, #78350f 0%, #d97706 100%);
+}
+
+.auth-modal-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.2);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* ── Auth Numbers Grid ────────────────────────────── */
+.auth-numbers-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.625rem;
+}
+
+.auth-number-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.75rem 0.875rem;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 10px;
+}
+
+.auth-number-card--wide {
+    grid-column: 1 / -1;
+}
+
+.auth-number-label {
+    font-size: 0.6375rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #92400e;
+}
+
+.auth-number-value {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: #111827;
+    word-break: break-all;
+}
+
+.auth-mono {
+    font-family: 'Courier New', Courier, monospace;
+    letter-spacing: 0.04em;
+}
+
+/* ── Auth Empty State ─────────────────────────────── */
+.auth-empty {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 1.25rem;
+    background: #f9fafb;
+    border: 1px solid #f3f4f6;
+    border-radius: 10px;
+    color: #6b7280;
+    font-size: 0.875rem;
 }

@@ -82,6 +82,117 @@ public with sharing class PlaidController {
     }
 
     @AuraEnabled
+    public static Map<String, Object> getAuth(String connectionId, String accountId) {
+        try {
+            String userId = UserInfo.getUserId();
+            Plaid_Connection__c conn = [
+                SELECT Id, Access_Token__c
+                FROM Plaid_Connection__c
+                WHERE Id = :connectionId AND User__c = :userId AND Status__c = 'Active'
+                LIMIT 1
+            ];
+
+            Map<String, Object> response = PlaidService.getAuth(conn.Access_Token__c, accountId);
+            Map<String, Object> numbers  = (Map<String, Object>) response.get('numbers');
+
+            // Find account name from accounts array
+            String accountName = '';
+            List<Object> rawAccounts = (List<Object>) response.get('accounts');
+            if (rawAccounts != null) {
+                for (Object rawAcct : rawAccounts) {
+                    Map<String, Object> acct = (Map<String, Object>) rawAcct;
+                    if (accountId.equals((String) acct.get('account_id'))) {
+                        accountName = (String) acct.get('name');
+                        break;
+                    }
+                }
+            }
+
+            // Helper: filter a list by account_id, flatten field names
+            Map<String, Object> ach = null;
+            if (numbers != null) {
+                List<Object> achList = (List<Object>) numbers.get('ach');
+                if (achList != null) {
+                    for (Object raw : achList) {
+                        Map<String, Object> n = (Map<String, Object>) raw;
+                        if (accountId.equals((String) n.get('account_id'))) {
+                            ach = new Map<String, Object>{
+                                'account'     => n.get('account'),
+                                'routing'     => n.get('routing'),
+                                'wireRouting' => n.get('wire_routing')
+                            };
+                            break;
+                        }
+                    }
+                }
+            }
+
+            Map<String, Object> eft = null;
+            if (numbers != null) {
+                List<Object> eftList = (List<Object>) numbers.get('eft');
+                if (eftList != null) {
+                    for (Object raw : eftList) {
+                        Map<String, Object> n = (Map<String, Object>) raw;
+                        if (accountId.equals((String) n.get('account_id'))) {
+                            eft = new Map<String, Object>{
+                                'account'     => n.get('account'),
+                                'institution' => n.get('institution'),
+                                'branch'      => n.get('branch')
+                            };
+                            break;
+                        }
+                    }
+                }
+            }
+
+            Map<String, Object> international = null;
+            if (numbers != null) {
+                List<Object> intlList = (List<Object>) numbers.get('international');
+                if (intlList != null) {
+                    for (Object raw : intlList) {
+                        Map<String, Object> n = (Map<String, Object>) raw;
+                        if (accountId.equals((String) n.get('account_id'))) {
+                            international = new Map<String, Object>{
+                                'iban' => n.get('iban'),
+                                'bic'  => n.get('bic')
+                            };
+                            break;
+                        }
+                    }
+                }
+            }
+
+            Map<String, Object> bacs = null;
+            if (numbers != null) {
+                List<Object> bacsList = (List<Object>) numbers.get('bacs');
+                if (bacsList != null) {
+                    for (Object raw : bacsList) {
+                        Map<String, Object> n = (Map<String, Object>) raw;
+                        if (accountId.equals((String) n.get('account_id'))) {
+                            bacs = new Map<String, Object>{
+                                'account'  => n.get('account'),
+                                'sortCode' => n.get('sort_code')
+                            };
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return new Map<String, Object>{
+                'accountId'   => accountId,
+                'accountName' => accountName,
+                'ach'         => ach,
+                'eft'         => eft,
+                'international' => international,
+                'bacs'        => bacs
+            };
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    @AuraEnabled
     public static Map<String, Object> getIdentity(String connectionId, String accountId) {
         try {
             String userId = UserInfo.getUserId();
@@ -92,7 +203,7 @@ public with sharing class PlaidController {
                 LIMIT 1
             ];
 
-            Map<String, Object> response = PlaidService.getIdentity(conn.Access_Token__c);
+            Map<String, Object> response = PlaidService.getIdentity(conn.Access_Token__c, accountId);
             List<Object> accounts = (List<Object>) response.get('accounts');
 
             for (Object rawAcct : accounts) {
@@ -211,14 +322,13 @@ public with sharing class PlaidController {
                 LIMIT 1
             ];
 
-            // transactions/sync does not support account_ids filtering — fetch all and filter here
             List<Map<String, Object>> allTransactions = new List<Map<String, Object>>();
             String cursor  = null;
             Boolean hasMore = true;
             Integer maxCallouts = 5;
 
             while (hasMore && maxCallouts > 0) {
-                Map<String, Object> response = PlaidService.syncTransactions(conn.Access_Token__c, cursor);
+                Map<String, Object> response = PlaidService.syncTransactions(conn.Access_Token__c, cursor, accountId);
                 List<Object> added = (List<Object>) response.get('added');
                 if (added != null) {
                     for (Object raw : added) {

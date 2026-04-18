@@ -22,7 +22,7 @@ public with sharing class PlaidService {
             'secret' => SECRET,
             'client_name' => 'Plaid Salesforce Integration',
             'language' => 'en',
-            'products' => new List<String>{ 'transactions', 'identity' },
+            'products' => new List<String>{ 'transactions', 'identity', 'auth' },
             'country_codes' => new List<String>{ 'US' },
             'user' => new Map<String, Object>{ 'client_user_id' => userId }
         };
@@ -47,26 +47,44 @@ public with sharing class PlaidService {
         return callPlaid('/accounts/get', body);
     }
 
-    public static Map<String, Object> getIdentity(String accessToken) {
+    public static Map<String, Object> getAuth(String accessToken, String accountId) {
         Map<String, Object> body = new Map<String, Object>{
             'client_id'    => CLIENT_ID,
             'secret'       => SECRET,
-            'access_token' => accessToken
+            'access_token' => accessToken,
+            'options'      => new Map<String, Object>{
+                'account_ids' => new List<String>{ accountId }
+            }
+        };
+        return callPlaid('/auth/get', body);
+    }
+
+    public static Map<String, Object> getIdentity(String accessToken, String accountId) {
+        Map<String, Object> body = new Map<String, Object>{
+            'client_id'    => CLIENT_ID,
+            'secret'       => SECRET,
+            'access_token' => accessToken,
+            'options'      => new Map<String, Object>{
+                'account_ids' => new List<String>{ accountId }
+            }
         };
         return callPlaid('/identity/get', body);
     }
 
-    public static Map<String, Object> syncTransactions(String accessToken, String cursor) {
+    public static Map<String, Object> syncTransactions(String accessToken, String cursor, String accountId) {
+        Map<String, Object> options = new Map<String, Object>{
+            'include_personal_finance_category' => true
+        };
+        if (String.isNotBlank(accountId)) {
+            options.put('account_id', accountId);
+        }
         Map<String, Object> body = new Map<String, Object>{
             'client_id'    => CLIENT_ID,
             'secret'       => SECRET,
             'access_token' => accessToken,
             'count'        => 500,
-            'options'      => new Map<String, Object>{
-                'include_personal_finance_category' => true
-            }
+            'options'      => options
         };
-
         if (String.isNotBlank(cursor)) {
             body.put('cursor', cursor);
         }

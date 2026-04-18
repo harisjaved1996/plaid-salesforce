@@ -7,6 +7,7 @@ import PLAID_SDK from '@salesforce/resourceUrl/PlaidSDK';
 import getLinkToken         from '@salesforce/apex/PlaidController.getLinkToken';
 import exchangePublicToken  from '@salesforce/apex/PlaidController.exchangePublicToken';
 import getConnectedAccounts from '@salesforce/apex/PlaidController.getConnectedAccounts';
+import getAuth              from '@salesforce/apex/PlaidController.getAuth';
 import getIdentity          from '@salesforce/apex/PlaidController.getIdentity';
 import disconnectBank       from '@salesforce/apex/PlaidController.disconnectBank';
 import hasActiveConnection  from '@salesforce/apex/PlaidController.hasActiveConnection';
@@ -89,8 +90,10 @@ export default class PlaidBankConnect extends LightningElement {
     @track isLoading        = true;
     @track error            = null;
     @track selectedAccount  = null;
-    @track identityData     = null;
+    @track identityData      = null;
     @track isLoadingIdentity = false;
+    @track authData          = null;
+    @track isLoadingAuth     = false;
 
     _plaidInitialized = false;
 
@@ -316,7 +319,12 @@ export default class PlaidBankConnect extends LightningElement {
 
             this.identityData = { ...raw, owners, account };
         } catch (err) {
-            this._handleError(err);
+            const msg = err?.body?.message || err?.message || '';
+            if (msg.includes('PRODUCT_IDENTITY') || msg.includes('user consent') || msg.includes('product_not_ready')) {
+                this._handleError({ message: 'Identity is not enabled for this bank connection. Please click "Remove Bank" and re-connect the bank to activate Identity.' });
+            } else {
+                this._handleError(err);
+            }
         } finally {
             this.isLoadingIdentity = false;
         }
@@ -326,11 +334,36 @@ export default class PlaidBankConnect extends LightningElement {
         this.identityData = null;
     }
 
+    // ── Auth Modal ────────────────────────────────────────────
+    async handleGetAuth(event) {
+        event.stopPropagation();
+        const { connectionId, accountId } = event.currentTarget.dataset;
+        try {
+            this.isLoadingAuth = true;
+            const raw = await getAuth({ connectionId, accountId });
+            this.authData = raw;
+        } catch (err) {
+            const msg = err?.body?.message || err?.message || '';
+            if (msg.includes('PRODUCT_AUTH') || msg.includes('user consent') || msg.includes('product_not_ready')) {
+                this._handleError({ message: 'Auth is not enabled for this bank connection. Please click "Remove Bank" and re-connect the bank to activate Auth.' });
+            } else {
+                this._handleError(err);
+            }
+        } finally {
+            this.isLoadingAuth = false;
+        }
+    }
+
+    handleCloseAuthModal() {
+        this.authData = null;
+    }
+
     // ── Getters ───────────────────────────────────────────────
     get isConnected() { return this.connections && this.connections.length > 0; }
 
     get hasSelectedAccount()  { return !!this.selectedAccount; }
     get hasIdentityData()     { return !!this.identityData; }
+    get hasAuthData()         { return !!this.authData; }
 
     get connectButtonLabel() { return this.isConnected ? 'Add Another Bank' : 'Connect Bank'; }
 

@@ -153,6 +153,16 @@
                                             <template if:false={isLoadingIdentity}>Get Identity</template>
                                         </button>
 
+                                        <!-- Get Auth button -->
+                                        <button class="get-auth-btn"
+                                            data-account-id={account.accountId}
+                                            data-connection-id={account.connectionId}
+                                            onclick={handleGetAuth}
+                                            title="View routing &amp; account numbers">
+                                            <template if:true={isLoadingAuth}>...</template>
+                                            <template if:false={isLoadingAuth}>Get Auth</template>
+                                        </button>
+
                                         <!-- Account trash / confirm -->
                                         <template if:false={account.confirmingDelete}>
                                             <button class="trash-btn"
@@ -184,6 +194,133 @@
                             </template>
                         </div>
 
+                    </div>
+                </template>
+
+                <!-- ── Auth Modal ────────────────────────────────── -->
+                <template if:true={hasAuthData}>
+                    <div class="acct-modal-backdrop" onclick={handleCloseAuthModal}></div>
+                    <div class="acct-modal auth-modal" role="dialog" aria-modal="true" aria-label="Account Auth">
+
+                        <!-- Header -->
+                        <div class="acct-modal-header auth-modal-header">
+                            <div class="acct-modal-header-left">
+                                <div class="auth-modal-icon">
+                                    <lightning-icon icon-name="utility:key" size="small" variant="inverse"></lightning-icon>
+                                </div>
+                                <div>
+                                    <h2 class="acct-modal-title">{authData.accountName}</h2>
+                                    <p class="acct-modal-subtitle">Routing &amp; Account Numbers</p>
+                                </div>
+                            </div>
+                            <button class="acct-modal-close" onclick={handleCloseAuthModal} title="Close">✕</button>
+                        </div>
+
+                        <!-- Body -->
+                        <div class="acct-modal-body">
+
+                            <!-- ACH -->
+                            <template if:true={authData.ach}>
+                                <div class="acct-modal-section">
+                                    <h3 class="acct-modal-section-title">ACH — US Automated Clearing House</h3>
+                                    <div class="auth-numbers-grid">
+                                        <div class="auth-number-card">
+                                            <span class="auth-number-label">Account Number</span>
+                                            <span class="auth-number-value auth-mono">{authData.ach.account}</span>
+                                        </div>
+                                        <div class="auth-number-card">
+                                            <span class="auth-number-label">Routing Number</span>
+                                            <span class="auth-number-value auth-mono">{authData.ach.routing}</span>
+                                        </div>
+                                        <template if:true={authData.ach.wireRouting}>
+                                            <div class="auth-number-card">
+                                                <span class="auth-number-label">Wire Routing Number</span>
+                                                <span class="auth-number-value auth-mono">{authData.ach.wireRouting}</span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <!-- EFT -->
+                            <template if:true={authData.eft}>
+                                <div class="acct-modal-section">
+                                    <h3 class="acct-modal-section-title">EFT — Canadian Electronic Funds Transfer</h3>
+                                    <div class="auth-numbers-grid">
+                                        <div class="auth-number-card">
+                                            <span class="auth-number-label">Account Number</span>
+                                            <span class="auth-number-value auth-mono">{authData.eft.account}</span>
+                                        </div>
+                                        <div class="auth-number-card">
+                                            <span class="auth-number-label">Institution Number</span>
+                                            <span class="auth-number-value auth-mono">{authData.eft.institution}</span>
+                                        </div>
+                                        <div class="auth-number-card">
+                                            <span class="auth-number-label">Branch / Transit Number</span>
+                                            <span class="auth-number-value auth-mono">{authData.eft.branch}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <!-- International -->
+                            <template if:true={authData.international}>
+                                <div class="acct-modal-section">
+                                    <h3 class="acct-modal-section-title">International</h3>
+                                    <div class="auth-numbers-grid">
+                                        <template if:true={authData.international.iban}>
+                                            <div class="auth-number-card auth-number-card--wide">
+                                                <span class="auth-number-label">IBAN</span>
+                                                <span class="auth-number-value auth-mono">{authData.international.iban}</span>
+                                            </div>
+                                        </template>
+                                        <template if:true={authData.international.bic}>
+                                            <div class="auth-number-card">
+                                                <span class="auth-number-label">BIC / SWIFT</span>
+                                                <span class="auth-number-value auth-mono">{authData.international.bic}</span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <!-- BACS -->
+                            <template if:true={authData.bacs}>
+                                <div class="acct-modal-section">
+                                    <h3 class="acct-modal-section-title">BACS — UK Bankers' Automated Clearing Services</h3>
+                                    <div class="auth-numbers-grid">
+                                        <div class="auth-number-card">
+                                            <span class="auth-number-label">Account Number</span>
+                                            <span class="auth-number-value auth-mono">{authData.bacs.account}</span>
+                                        </div>
+                                        <div class="auth-number-card">
+                                            <span class="auth-number-label">Sort Code</span>
+                                            <span class="auth-number-value auth-mono">{authData.bacs.sortCode}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <!-- No numbers available -->
+                            <template if:false={authData.ach}>
+                                <template if:false={authData.eft}>
+                                    <template if:false={authData.international}>
+                                        <template if:false={authData.bacs}>
+                                            <div class="auth-empty">
+                                                <lightning-icon icon-name="utility:info" size="small"></lightning-icon>
+                                                <p>No routing numbers available for this account.</p>
+                                            </div>
+                                        </template>
+                                    </template>
+                                </template>
+                            </template>
+
+                        </div>
+
+                        <!-- Footer -->
+                        <div class="acct-modal-footer">
+                            <button class="acct-modal-footer-btn" onclick={handleCloseAuthModal}>Close</button>
+                        </div>
                     </div>
                 </template>
 
