@@ -60,11 +60,8 @@
                     <div key={connection.groupKey} class="bank-card">
 
                         <!-- ── Bank Header ─────────────────── -->
-                        <div class={connection.headerClass}
-                             data-group-key={connection.groupKey}
-                             onclick={handleToggle}>
+                        <div class={connection.headerClass} data-group-key={connection.groupKey} onclick={handleToggle}>
 
-                            <!-- Avatar + Info -->
                             <div class="bank-avatar" style={connection.avatarStyle}>
                                 {connection.institutionInitial}
                             </div>
@@ -73,46 +70,38 @@
                                 <p class="bank-count">{connection.accountCount} Account(s)</p>
                             </div>
 
-                            <!-- Bank-level Remove / Confirm -->
                             <div class="bank-actions">
                                 <template if:false={connection.confirmingBankRemove}>
-                                    <button class="bank-remove-btn"
-                                        data-group-key={connection.groupKey}
-                                        onclick={handleBankRemoveClick}
-                                        title="Remove all accounts for this bank">
+                                    <button class="bank-remove-btn" data-group-key={connection.groupKey}
+                                        onclick={handleBankRemoveClick} title="Remove all accounts for this bank">
                                         Remove Bank
                                     </button>
                                 </template>
                                 <template if:true={connection.confirmingBankRemove}>
                                     <div class="bank-confirm-row">
                                         <span class="confirm-label">Remove all?</span>
-                                        <button class="confirm-yes"
-                                            data-group-key={connection.groupKey}
+                                        <button class="confirm-yes" data-group-key={connection.groupKey}
                                             onclick={handleBankConfirmRemove}>✓</button>
-                                        <button class="confirm-no"
-                                            data-group-key={connection.groupKey}
+                                        <button class="confirm-no" data-group-key={connection.groupKey}
                                             onclick={handleBankCancelRemove}>✕</button>
                                     </div>
                                 </template>
                             </div>
 
-                            <!-- Chevron -->
                             <div class={connection.chevronClass}>
-                                <lightning-icon icon-name="utility:chevrondown"
-                                    size="x-small" variant="bare">
+                                <lightning-icon icon-name="utility:chevrondown" size="x-small" variant="bare">
                                 </lightning-icon>
                             </div>
 
                         </div>
 
-                        <!-- ── Account Rows (collapsible) ──── -->
+                        <!-- ── Account Rows ────────────────── -->
                         <div class={connection.accountsWrapClass}>
                             <template for:each={connection.accounts} for:item="account">
                                 <div key={account.accountId} class="account-row">
 
                                     <div class="acct-icon" style={account.iconStyle}>
-                                        <lightning-icon icon-name={account.iconName}
-                                            size="x-small" variant="inverse">
+                                        <lightning-icon icon-name={account.iconName} size="x-small" variant="inverse">
                                         </lightning-icon>
                                     </div>
 
@@ -133,57 +122,52 @@
                                             <span class="bal-available">Avail: {account.formattedAvailableBalance}</span>
                                         </div>
 
-                                        <!-- Get Account button -->
-                                        <button class="get-account-btn"
-                                            data-group-key={connection.groupKey}
-                                            data-account-id={account.accountId}
-                                            onclick={handleGetAccount}
-                                            title="View account details">
+                                        <button class="get-account-btn" data-group-key={connection.groupKey}
+                                            data-account-id={account.accountId} onclick={handleGetAccount}>
                                             Get Account
                                         </button>
 
-                                        <!-- Get Identity button -->
-                                        <button class="get-identity-btn"
-                                            data-group-key={connection.groupKey}
+                                        <button class="get-identity-btn" data-group-key={connection.groupKey}
                                             data-account-id={account.accountId}
-                                            data-connection-id={account.connectionId}
-                                            onclick={handleGetIdentity}
-                                            title="View account owner identity">
+                                            data-connection-id={account.connectionId} onclick={handleGetIdentity}>
                                             <template if:true={isLoadingIdentity}>...</template>
                                             <template if:false={isLoadingIdentity}>Get Identity</template>
                                         </button>
 
-                                        <!-- Get Auth button -->
-                                        <button class="get-auth-btn"
+                                        <button class="send-transfer-btn" data-group-key={connection.groupKey}
                                             data-account-id={account.accountId}
-                                            data-connection-id={account.connectionId}
-                                            onclick={handleGetAuth}
-                                            title="View routing &amp; account numbers">
+                                            data-connection-id={account.connectionId} onclick={handleSendTransfer}
+                                            title="Send ACH transfer from this account">
+                                            Send Transfer
+                                        </button>
+
+                                        <button class="get-auth-btn" data-account-id={account.accountId}
+                                            data-connection-id={account.connectionId} onclick={handleGetAuth}>
                                             <template if:true={isLoadingAuth}>...</template>
                                             <template if:false={isLoadingAuth}>Get Auth</template>
                                         </button>
 
-                                        <!-- Account trash / confirm -->
+                                        <button class="view-txn-btn" data-group-key={connection.groupKey}
+                                            data-account-id={account.accountId}
+                                            data-connection-id={account.connectionId} onclick={handleViewTransactions}
+                                            title="View transaction history for this account">
+                                            Transactions
+                                        </button>
+
                                         <template if:false={account.confirmingDelete}>
-                                            <button class="trash-btn"
-                                                data-group-key={connection.groupKey}
-                                                data-account-id={account.accountId}
-                                                onclick={handleDeleteClick}
-                                                title="Remove this account">
-                                                <lightning-icon icon-name="utility:delete"
-                                                    size="x-small">
+                                            <button class="trash-btn" data-group-key={connection.groupKey}
+                                                data-account-id={account.accountId} onclick={handleDeleteClick}>
+                                                <lightning-icon icon-name="utility:delete" size="x-small">
                                                 </lightning-icon>
                                             </button>
                                         </template>
                                         <template if:true={account.confirmingDelete}>
                                             <div class="delete-confirm">
                                                 <span class="confirm-label">Remove?</span>
-                                                <button class="confirm-yes"
-                                                    data-group-key={connection.groupKey}
+                                                <button class="confirm-yes" data-group-key={connection.groupKey}
                                                     data-account-id={account.accountId}
                                                     onclick={handleConfirmDelete}>✓</button>
-                                                <button class="confirm-no"
-                                                    data-group-key={connection.groupKey}
+                                                <button class="confirm-no" data-group-key={connection.groupKey}
                                                     data-account-id={account.accountId}
                                                     onclick={handleCancelDelete}>✕</button>
                                             </div>
@@ -197,12 +181,215 @@
                     </div>
                 </template>
 
+                <!-- ── Transfer Modal ──────────────────────────────────── -->
+                <template if:true={isTransferModalOpen}>
+                    <div class="acct-modal-backdrop" onclick={handleCloseTransferModal}></div>
+                    <div class="acct-modal transfer-modal" role="dialog" aria-modal="true" aria-label="Send Transfer">
+
+                        <!-- Header -->
+                        <div class="acct-modal-header transfer-modal-header">
+                            <div class="acct-modal-header-left">
+                                <div class="transfer-modal-icon">
+                                    <lightning-icon icon-name="utility:forward" size="small" variant="inverse"></lightning-icon>
+                                </div>
+                                <div>
+                                    <h2 class="acct-modal-title">Send Transfer</h2>
+                                    <p class="acct-modal-subtitle">Debit from source · Credit to destination</p>
+                                </div>
+                            </div>
+                            <button class="acct-modal-close" onclick={handleCloseTransferModal}>✕</button>
+                        </div>
+
+                        <!-- Body -->
+                        <div class="acct-modal-body">
+
+                            <!-- FROM: Source account banner -->
+                            <div class="transfer-source-banner">
+                                <div class="transfer-source-icon">
+                                    <lightning-icon icon-name={transferSourceAccount.iconName} size="x-small" variant="inverse"></lightning-icon>
+                                </div>
+                                <div class="transfer-source-info">
+                                    <span class="transfer-source-label">From — Debit (money leaves this account)</span>
+                                    <span class="transfer-source-name">{transferSourceAccount.institutionName} · {transferSourceAccount.name} ••••{transferSourceAccount.mask}</span>
+                                    <template if:true={sourceLegalName}>
+                                        <span class="transfer-source-sub">{sourceLegalName}</span>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <!-- TO: Destination account selector -->
+                            <div class="acct-modal-section">
+                                <h3 class="acct-modal-section-title">To Account (Destination)</h3>
+
+                                <template if:true={hasDestinationAccounts}>
+                                    <div class="transfer-dest-select-wrap">
+                                        <label class="transfer-label">Select Bank Account <span class="transfer-required">*</span></label>
+                                        <select class="transfer-select transfer-select-dest" onchange={handleDestAccountChange}>
+                                            <option value="">-- Select Destination Account --</option>
+                                            <template for:each={destinationAccounts} for:item="opt">
+                                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                            </template>
+                                        </select>
+                                    </div>
+                                </template>
+                                <template if:false={hasDestinationAccounts}>
+                                    <p class="transfer-no-dest">No other linked accounts available. Connect another bank to send a transfer.</p>
+                                </template>
+
+                                <!-- Selected destination info card -->
+                                <template if:true={selectedDestAccount}>
+                                    <div class="transfer-dest-banner">
+                                        <div class="transfer-dest-icon">
+                                            <lightning-icon icon-name={selectedDestAccount.iconName} size="x-small" variant="inverse"></lightning-icon>
+                                        </div>
+                                        <div class="transfer-dest-info">
+                                            <span class="transfer-dest-label">To — Credit (money arrives here)</span>
+                                            <span class="transfer-dest-name">{selectedDestAccount.institutionName} · {selectedDestAccount.name} ••••{selectedDestAccount.mask}</span>
+                                            <template if:true={destLegalName}>
+                                                <span class="transfer-dest-sub">{destLegalName}</span>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <!-- Transfer Details -->
+                            <div class="acct-modal-section">
+                                <h3 class="acct-modal-section-title">Transfer Details</h3>
+                                <div class="transfer-params-grid">
+                                    <div class="transfer-row-field">
+                                        <label class="transfer-label">Amount ($) <span class="transfer-required">*</span></label>
+                                        <input type="number" class="transfer-input" data-field="transferAmount"
+                                            onchange={handleTransferFieldChange} placeholder="0.00" min="0.01" step="0.01" />
+                                    </div>
+                                    <div class="transfer-row-field">
+                                        <label class="transfer-label">Network</label>
+                                        <select class="transfer-select" data-field="transferNetwork" onchange={handleTransferFieldChange}>
+                                            <option value="ach">ACH – Standard (1-3 days)</option>
+                                            <option value="same-day-ach">Same-Day ACH</option>
+                                            <option value="rtp">RTP – Real-Time</option>
+                                        </select>
+                                    </div>
+                                    <div class="transfer-row-field">
+                                        <label class="transfer-label">ACH Class</label>
+                                        <select class="transfer-select" data-field="transferAchClass" onchange={handleTransferFieldChange}>
+                                            <option value="ppd">PPD – Personal</option>
+                                            <option value="ccd">CCD – Corporate</option>
+                                            <option value="web">WEB – Internet</option>
+                                            <option value="tel">TEL – Telephone</option>
+                                        </select>
+                                    </div>
+                                    <div class="transfer-row-field">
+                                        <label class="transfer-label">Description <span class="transfer-hint">(max 10 chars)</span></label>
+                                        <input type="text" class="transfer-input" data-field="transferDescription"
+                                            onchange={handleTransferFieldChange} placeholder="e.g. Payment" maxlength="10" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Result -->
+                            <template if:true={hasTransferResult}>
+                                <div class="acct-modal-section">
+                                    <h3 class="acct-modal-section-title">Transfer Result</h3>
+                                    <template if:true={transferResult.success}>
+                                        <div class="transfer-result-success">
+                                            <lightning-icon icon-name="utility:success" size="x-small" variant="success"></lightning-icon>
+                                            <div class="transfer-result-info">
+                                                <span class="transfer-result-label">{transferResult.label}</span>
+                                                <span class="transfer-result-meta">Debit ID: {transferResult.debitTransferId} · Status: {transferResult.debitStatus}</span>
+                                                <span class="transfer-result-meta">Credit ID: {transferResult.creditTransferId} · Status: {transferResult.creditStatus}</span>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <template if:false={transferResult.success}>
+                                        <div class="transfer-result-failure">
+                                            <lightning-icon icon-name="utility:error" size="x-small"></lightning-icon>
+                                            <div class="transfer-result-info">
+                                                <span class="transfer-result-label">Transfer Failed</span>
+                                                <span class="transfer-result-error">{transferResult.error}</span>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+
+                        </div>
+
+                        <!-- Footer -->
+                        <div class="acct-modal-footer">
+                            <button class="acct-modal-footer-btn" onclick={handleCloseTransferModal}>Close</button>
+                            <button class="transfer-submit-btn" onclick={handleSubmitTransfer} disabled={isSubmittingTransfer}>
+                                <template if:true={isSubmittingTransfer}>Sending...</template>
+                                <template if:false={isSubmittingTransfer}>Send Transfer</template>
+                            </button>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- ── Transactions Modal ──────────────────────────────── -->
+                <template if:true={isTransactionsModalOpen}>
+                    <div class="acct-modal-backdrop" onclick={handleCloseTransactionsModal}></div>
+                    <div class="acct-modal txn-modal" role="dialog" aria-modal="true" aria-label="Transactions">
+
+                        <!-- Header -->
+                        <div class="acct-modal-header txn-modal-header">
+                            <div class="acct-modal-header-left">
+                                <div class="txn-modal-icon">
+                                    <lightning-icon icon-name="utility:list" size="small" variant="inverse"></lightning-icon>
+                                </div>
+                                <div>
+                                    <h2 class="acct-modal-title">{transactionSourceAccount.institutionName} · {transactionSourceAccount.name}</h2>
+                                    <p class="acct-modal-subtitle">Transaction History ••••{transactionSourceAccount.mask}</p>
+                                </div>
+                            </div>
+                            <button class="acct-modal-close" onclick={handleCloseTransactionsModal}>✕</button>
+                        </div>
+
+                        <!-- Body -->
+                        <div class="acct-modal-body">
+                            <template if:true={isLoadingTransactions}>
+                                <div class="loading-container">
+                                    <lightning-spinner alternative-text="Loading" size="medium" variant="brand"></lightning-spinner>
+                                </div>
+                            </template>
+                            <template if:false={isLoadingTransactions}>
+                                <template if:true={hasTransactions}>
+                                    <div class="txn-list-header">
+                                        <span>Date</span>
+                                        <span>Description</span>
+                                        <span class="txn-amount-col">Amount</span>
+                                    </div>
+                                    <div class="txn-list">
+                                        <template for:each={transactions} for:item="txn">
+                                            <div key={txn.key} class="txn-row">
+                                                <span class="txn-date">{txn.date}</span>
+                                                <span class="txn-name">{txn.name}</span>
+                                                <span class={txn.amountClass}>{txn.formattedAmt}</span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                                <template if:true={noTransactions}>
+                                    <div class="txn-empty">
+                                        <lightning-icon icon-name="utility:info" size="small"></lightning-icon>
+                                        <p>No transactions found for this account.</p>
+                                    </div>
+                                </template>
+                            </template>
+                        </div>
+
+                        <!-- Footer -->
+                        <div class="acct-modal-footer">
+                            <button class="acct-modal-footer-btn" onclick={handleCloseTransactionsModal}>Close</button>
+                        </div>
+                    </div>
+                </template>
+
                 <!-- ── Auth Modal ────────────────────────────────── -->
                 <template if:true={hasAuthData}>
                     <div class="acct-modal-backdrop" onclick={handleCloseAuthModal}></div>
                     <div class="acct-modal auth-modal" role="dialog" aria-modal="true" aria-label="Account Auth">
 
-                        <!-- Header -->
                         <div class="acct-modal-header auth-modal-header">
                             <div class="acct-modal-header-left">
                                 <div class="auth-modal-icon">
@@ -213,13 +400,10 @@
                                     <p class="acct-modal-subtitle">Routing &amp; Account Numbers</p>
                                 </div>
                             </div>
-                            <button class="acct-modal-close" onclick={handleCloseAuthModal} title="Close">✕</button>
+                            <button class="acct-modal-close" onclick={handleCloseAuthModal}>✕</button>
                         </div>
 
-                        <!-- Body -->
                         <div class="acct-modal-body">
-
-                            <!-- ACH -->
                             <template if:true={authData.ach}>
                                 <div class="acct-modal-section">
                                     <h3 class="acct-modal-section-title">ACH — US Automated Clearing House</h3>
@@ -242,7 +426,6 @@
                                 </div>
                             </template>
 
-                            <!-- EFT -->
                             <template if:true={authData.eft}>
                                 <div class="acct-modal-section">
                                     <h3 class="acct-modal-section-title">EFT — Canadian Electronic Funds Transfer</h3>
@@ -263,7 +446,6 @@
                                 </div>
                             </template>
 
-                            <!-- International -->
                             <template if:true={authData.international}>
                                 <div class="acct-modal-section">
                                     <h3 class="acct-modal-section-title">International</h3>
@@ -284,7 +466,6 @@
                                 </div>
                             </template>
 
-                            <!-- BACS -->
                             <template if:true={authData.bacs}>
                                 <div class="acct-modal-section">
                                     <h3 class="acct-modal-section-title">BACS — UK Bankers' Automated Clearing Services</h3>
@@ -301,7 +482,6 @@
                                 </div>
                             </template>
 
-                            <!-- No numbers available -->
                             <template if:false={authData.ach}>
                                 <template if:false={authData.eft}>
                                     <template if:false={authData.international}>
@@ -314,10 +494,8 @@
                                     </template>
                                 </template>
                             </template>
-
                         </div>
 
-                        <!-- Footer -->
                         <div class="acct-modal-footer">
                             <button class="acct-modal-footer-btn" onclick={handleCloseAuthModal}>Close</button>
                         </div>
@@ -329,7 +507,6 @@
                     <div class="acct-modal-backdrop" onclick={handleCloseIdentityModal}></div>
                     <div class="acct-modal id-modal" role="dialog" aria-modal="true" aria-label="Account Identity">
 
-                        <!-- Header -->
                         <div class="acct-modal-header id-modal-header">
                             <div class="acct-modal-header-left">
                                 <div class="id-modal-icon">
@@ -340,15 +517,13 @@
                                     <p class="acct-modal-subtitle">Identity &amp; Ownership Details</p>
                                 </div>
                             </div>
-                            <button class="acct-modal-close" onclick={handleCloseIdentityModal} title="Close">✕</button>
+                            <button class="acct-modal-close" onclick={handleCloseIdentityModal}>✕</button>
                         </div>
 
-                        <!-- Body -->
                         <div class="acct-modal-body">
                             <template for:each={identityData.owners} for:item="owner">
                                 <div key={owner.ownerKey} class="id-owner-block">
 
-                                    <!-- Names -->
                                     <div class="acct-modal-section">
                                         <h3 class="acct-modal-section-title">Owner Name(s)</h3>
                                         <template for:each={owner.names} for:item="nameItem">
@@ -356,7 +531,6 @@
                                         </template>
                                     </div>
 
-                                    <!-- Emails -->
                                     <template if:true={owner.emails.length}>
                                         <div class="acct-modal-section">
                                             <h3 class="acct-modal-section-title">Email Addresses</h3>
@@ -379,7 +553,6 @@
                                         </div>
                                     </template>
 
-                                    <!-- Phone Numbers -->
                                     <template if:true={owner.phones.length}>
                                         <div class="acct-modal-section">
                                             <h3 class="acct-modal-section-title">Phone Numbers</h3>
@@ -402,7 +575,6 @@
                                         </div>
                                     </template>
 
-                                    <!-- Addresses -->
                                     <template if:true={owner.addresses.length}>
                                         <div class="acct-modal-section">
                                             <h3 class="acct-modal-section-title">Addresses</h3>
@@ -437,7 +609,6 @@
                             </template>
                         </div>
 
-                        <!-- Footer -->
                         <div class="acct-modal-footer">
                             <button class="acct-modal-footer-btn" onclick={handleCloseIdentityModal}>Close</button>
                         </div>
@@ -448,13 +619,11 @@
                 <template if:true={hasSelectedAccount}>
                     <div class="acct-modal-backdrop" onclick={handleCloseModal}></div>
                     <div class="acct-modal" role="dialog" aria-modal="true" aria-label="Account Details">
-                        <!-- Modal Header -->
+
                         <div class="acct-modal-header">
                             <div class="acct-modal-header-left">
                                 <div class="acct-modal-icon" style={selectedAccount.iconStyle}>
-                                    <lightning-icon icon-name={selectedAccount.iconName}
-                                        size="small" variant="inverse">
-                                    </lightning-icon>
+                                    <lightning-icon icon-name={selectedAccount.iconName} size="small" variant="inverse"></lightning-icon>
                                 </div>
                                 <div>
                                     <h2 class="acct-modal-title">{selectedAccount.name}</h2>
@@ -464,13 +633,10 @@
                                     <span class={selectedAccount.chipClass}>{selectedAccount.subtype}</span>
                                 </div>
                             </div>
-                            <button class="acct-modal-close" onclick={handleCloseModal} title="Close">✕</button>
+                            <button class="acct-modal-close" onclick={handleCloseModal}>✕</button>
                         </div>
 
-                        <!-- Modal Body -->
                         <div class="acct-modal-body">
-
-                            <!-- Account Info Section -->
                             <div class="acct-modal-section">
                                 <h3 class="acct-modal-section-title">Account Information</h3>
                                 <div class="acct-modal-grid">
@@ -519,7 +685,6 @@
                                 </div>
                             </div>
 
-                            <!-- Balances Section -->
                             <div class="acct-modal-section">
                                 <h3 class="acct-modal-section-title">Balances</h3>
                                 <div class="acct-modal-balance-grid">
@@ -537,10 +702,8 @@
                                     </div>
                                 </div>
                             </div>
-
                         </div>
 
-                        <!-- Modal Footer -->
                         <div class="acct-modal-footer">
                             <button class="acct-modal-footer-btn" onclick={handleCloseModal}>Close</button>
                         </div>

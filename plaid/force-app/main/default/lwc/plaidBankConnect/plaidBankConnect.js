@@ -9,6 +9,8 @@ import exchangePublicToken  from '@salesforce/apex/PlaidController.exchangePubli
 import getConnectedAccounts from '@salesforce/apex/PlaidController.getConnectedAccounts';
 import getAuth              from '@salesforce/apex/PlaidController.getAuth';
 import getIdentity          from '@salesforce/apex/PlaidController.getIdentity';
+import createTransfer       from '@salesforce/apex/PlaidController.createTransfer';
+import getTransactions      from '@salesforce/apex/PlaidController.getTransactions';
 import disconnectBank       from '@salesforce/apex/PlaidController.disconnectBank';
 import hasActiveConnection  from '@salesforce/apex/PlaidController.hasActiveConnection';
 
@@ -92,8 +94,28 @@ export default class PlaidBankConnect extends LightningElement {
     @track selectedAccount  = null;
     @track identityData      = null;
     @track isLoadingIdentity = false;
-    @track authData          = null;
-    @track isLoadingAuth     = false;
+    @track authData              = null;
+    @track isLoadingAuth         = false;
+
+    // ── Transfer Modal state ──────────────────────────────────
+    @track isTransferModalOpen      = false;
+    @track transferSourceAccount    = null;
+    @track sourceLegalName          = '';
+    @track selectedDestAccountId    = '';
+    @track selectedDestConnectionId = '';
+    @track destLegalName            = '';
+    @track transferAmount           = '';
+    @track transferNetwork          = 'ach';
+    @track transferAchClass         = 'ppd';
+    @track transferDescription      = '';
+    @track isSubmittingTransfer     = false;
+    @track transferResult           = null;
+
+    // ── Transactions Modal state ──────────────────────────────
+    @track isTransactionsModalOpen  = false;
+    @track isLoadingTransactions    = false;
+    @track transactionSourceAccount = null;
+    @track transactions             = [];
 
     _plaidInitialized = false;
 
@@ -115,10 +137,8 @@ export default class PlaidBankConnect extends LightningElement {
     async _loadAccounts() {
         const raw = await getConnectedAccounts();
 
-        // Preserve expanded state across reloads
         const prevExpanded = new Map(this.connections.map(c => [c.groupKey, c.isExpanded]));
 
-        // ── Group all connections by institution name ──────────
         const groupMap = new Map();
         (raw || []).forEach(conn => {
             const key = (conn.institutionName || 'Unknown Bank').toLowerCase().trim();
@@ -126,7 +146,7 @@ export default class PlaidBankConnect extends LightningElement {
                 groupMap.set(key, {
                     groupKey:        key,
                     institutionName: conn.institutionName || 'Unknown Bank',
-                    connectionIds:   [],   // every Plaid Item for this institution
+                    connectionIds:   [],
                     accounts:        [],
                 });
             }
@@ -261,7 +281,6 @@ export default class PlaidBankConnect extends LightningElement {
             this.isLoading = true;
             await disconnectBank({ connectionId: account.connectionId });
 
-            // Remove all accounts under that Plaid Item and update the group
             this.connections = this.connections
                 .map(c => {
                     if (c.groupKey !== groupKey) return c;
@@ -300,7 +319,6 @@ export default class PlaidBankConnect extends LightningElement {
             this.isLoadingIdentity = true;
             const raw = await getIdentity({ connectionId, accountId });
 
-            // Enrich owners with template-safe keys for iteration
             const owners = (raw.owners || []).map((owner, oi) => ({
                 ownerKey: `owner-${oi}`,
                 names: (owner.names || []).map((name, ni) => ({ key: `n-${oi}-${ni}`, value: name })),
@@ -313,7 +331,6 @@ export default class PlaidBankConnect extends LightningElement {
                 })),
             }));
 
-            // Find account info from already-loaded connections for the header
             const group   = this.connections.find(c => c.groupKey === groupKey);
             const account = group?.accounts.find(a => a.accountId === accountId);
 
@@ -358,12 +375,167 @@ export default class PlaidBankConnect extends LightningElement {
         this.authData = null;
     }
 
+    // ── Transfer Modal ────────────────────────────────────────
+    async handleSendTransfer(event) {
+        event.stopPropagation();
+        const { connectionId, accountId, groupKey } = event.currentTarget.dataset;
+        const group   = this.connections.find(c => c.groupKey === groupKey);
+        const account = group?.accounts.find(a => a.accountId === accountId);
+
+        this.transferSourceAccount    = {
+            connectionId, accountId,
+            name:            account?.name          || 'Account',
+            mask:            account?.mask          || '',
+            institutionName: group?.institutionName || '',
+            iconName:        account?.iconName      || 'utility:money',
+        };
+        this.sourceLegalName          = '';
+        this.selectedDestAccountId    = '';
+        this.selectedDestConnectionId = '';
+        this.destLegalName            = '';
+        this.transferAmount           = '';
+        this.transferNetwork          = 'ach';
+        this.transferAchClass         = 'ppd';
+        this.transferDescription      = '';
+        this.transferResult           = null;
+        this.isTransferModalOpen      = true;
+
+        try {
+            const raw = await getIdentity({ connectionId, accountId });
+            this.sourceLegalName = raw?.owners?.[0]?.names?.[0] || '';
+        } catch (e) { /* identity not enabled */ }
+    }
+
+    handleDestAccountChange(event) {
+        const accountId = event.target.value;
+        if (!accountId) {
+            this.selectedDestAccountId    = '';
+            this.selectedDestConnectionId = '';
+            this.destLegalName            = '';
+            return;
+        }
+        let foundConnectionId = '';
+        for (const conn of this.connections) {
+            const acct = conn.accounts.find(a => a.accountId === accountId);
+            if (acct) { foundConnectionId = acct.connectionId; break; }
+        }
+        this.selectedDestAccountId    = accountId;
+        this.selectedDestConnectionId = foundConnectionId;
+        this.destLegalName            = '';
+        this._fetchDestIdentity(foundConnectionId, accountId);
+    }
+
+    async _fetchDestIdentity(connectionId, accountId) {
+        try {
+            const raw = await getIdentity({ connectionId, accountId });
+            this.destLegalName = raw?.owners?.[0]?.names?.[0] || '';
+        } catch (e) { /* silently fail */ }
+    }
+
+    handleTransferFieldChange(event) {
+        const field = event.currentTarget.dataset.field;
+        this[field] = event.target.value;
+    }
+
+    handleCloseTransferModal() {
+        this.isTransferModalOpen = false;
+        this.transferResult      = null;
+    }
+
+    async handleSubmitTransfer() {
+        if (!this.selectedDestAccountId) {
+            this._showToast('Error', 'Please select a destination account.', 'error');
+            return;
+        }
+        const amt = parseFloat(this.transferAmount);
+        if (!amt || amt <= 0) {
+            this._showToast('Error', 'Please enter a valid amount greater than 0.', 'error');
+            return;
+        }
+        this.isSubmittingTransfer = true;
+        this.transferResult       = null;
+        try {
+            const res = await createTransfer({
+                sourceConnectionId: this.transferSourceAccount.connectionId,
+                sourceAccountId:    this.transferSourceAccount.accountId,
+                destConnectionId:   this.selectedDestConnectionId,
+                destAccountId:      this.selectedDestAccountId,
+                network:            this.transferNetwork,
+                amount:             amt.toFixed(2),
+                achClass:           this.transferAchClass,
+                description:        (this.transferDescription || 'Transfer').substring(0, 10),
+                sourceLegalName:    this.sourceLegalName || 'Account Holder',
+                destLegalName:      this.destLegalName   || 'Account Holder',
+            });
+            this.transferResult = {
+                success:          true,
+                label:            `$${amt.toFixed(2)} transfer initiated successfully`,
+                debitTransferId:  res.debitTransferId,
+                debitStatus:      res.debitStatus,
+                creditTransferId: res.creditTransferId,
+                creditStatus:     res.creditStatus,
+            };
+            this._showToast('Success', `Transfer of $${amt.toFixed(2)} initiated.`, 'success');
+        } catch (err) {
+            const msg = err?.body?.message || err?.message || 'Transfer failed';
+            this.transferResult = { success: false, error: msg };
+        } finally {
+            this.isSubmittingTransfer = false;
+        }
+    }
+
+    // ── Transactions Modal ────────────────────────────────────
+    async handleViewTransactions(event) {
+        event.stopPropagation();
+        const { connectionId, accountId, groupKey } = event.currentTarget.dataset;
+        const group   = this.connections.find(c => c.groupKey === groupKey);
+        const account = group?.accounts.find(a => a.accountId === accountId);
+
+        this.transactionSourceAccount = {
+            connectionId, accountId,
+            name:            account?.name          || 'Account',
+            mask:            account?.mask          || '',
+            institutionName: group?.institutionName || '',
+        };
+        this.transactions            = [];
+        this.isTransactionsModalOpen = true;
+        this.isLoadingTransactions   = true;
+
+        try {
+            const raw = await getTransactions({ connectionId, accountId });
+            this.transactions = (raw || []).map((t, i) => {
+                const amount  = parseFloat(t.amount) || 0;
+                const isDebit = amount > 0;
+                return {
+                    key:          t.transaction_id || `txn-${i}`,
+                    date:         t.date,
+                    name:         t.merchant_name || t.name,
+                    formattedAmt: `${isDebit ? '-' : '+'}$${Math.abs(amount).toFixed(2)}`,
+                    amountClass:  isDebit ? 'txn-amount txn-debit' : 'txn-amount txn-credit',
+                };
+            });
+        } catch (err) {
+            this._handleError(err);
+            this.isTransactionsModalOpen = false;
+        } finally {
+            this.isLoadingTransactions = false;
+        }
+    }
+
+    handleCloseTransactionsModal() {
+        this.isTransactionsModalOpen = false;
+        this.transactions            = [];
+    }
+
     // ── Getters ───────────────────────────────────────────────
     get isConnected() { return this.connections && this.connections.length > 0; }
 
     get hasSelectedAccount()  { return !!this.selectedAccount; }
     get hasIdentityData()     { return !!this.identityData; }
     get hasAuthData()         { return !!this.authData; }
+    get hasTransferResult()   { return !!this.transferResult; }
+    get hasTransactions()     { return this.transactions && this.transactions.length > 0; }
+    get noTransactions()      { return !this.isLoadingTransactions && (!this.transactions || this.transactions.length === 0); }
 
     get connectButtonLabel() { return this.isConnected ? 'Add Another Bank' : 'Connect Bank'; }
 
@@ -376,6 +548,33 @@ export default class PlaidBankConnect extends LightningElement {
 
     get totalAccountCount() {
         return this.connections.reduce((sum, c) => sum + c.accounts.length, 0);
+    }
+
+    get destinationAccounts() {
+        const srcId = this.transferSourceAccount?.accountId;
+        const opts  = [];
+        (this.connections || []).forEach(conn => {
+            (conn.accounts || []).forEach(acct => {
+                if (acct.accountId !== srcId) {
+                    opts.push({
+                        value: acct.accountId,
+                        label: `${conn.institutionName} · ${acct.name} ••••${acct.mask}`,
+                    });
+                }
+            });
+        });
+        return opts;
+    }
+
+    get hasDestinationAccounts() { return this.destinationAccounts.length > 0; }
+
+    get selectedDestAccount() {
+        if (!this.selectedDestAccountId) return null;
+        for (const conn of this.connections) {
+            const acct = conn.accounts.find(a => a.accountId === this.selectedDestAccountId);
+            if (acct) return { ...acct, institutionName: conn.institutionName };
+        }
+        return null;
     }
 
     // ── Utilities ─────────────────────────────────────────────

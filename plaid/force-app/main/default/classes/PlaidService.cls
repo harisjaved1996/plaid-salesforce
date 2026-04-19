@@ -91,6 +91,43 @@ public with sharing class PlaidService {
         return callPlaid('/transactions/sync', body);
     }
 
+    public static Map<String, Object> createTransferAuthorization(
+        String accessToken, String accountId, String type, String network,
+        String amount, String achClass, String legalName, String emailAddress, String phoneNumber
+    ) {
+        Map<String, Object> user = new Map<String, Object>{ 'legal_name' => legalName };
+        if (String.isNotBlank(emailAddress)) user.put('email_address', emailAddress);
+        if (String.isNotBlank(phoneNumber))  user.put('phone_number',  phoneNumber);
+
+        Map<String, Object> body = new Map<String, Object>{
+            'client_id'    => CLIENT_ID,
+            'secret'       => SECRET,
+            'access_token' => accessToken,
+            'account_id'   => accountId,
+            'type'         => type,
+            'network'      => network,
+            'amount'       => amount,
+            'ach_class'    => achClass,
+            'user'         => user
+        };
+
+        return callPlaid('/transfer/authorization/create', body);
+    }
+
+    public static Map<String, Object> createTransfer(
+        String accessToken, String accountId, String authorizationId, String description
+    ) {
+        Map<String, Object> body = new Map<String, Object>{
+            'client_id'        => CLIENT_ID,
+            'secret'           => SECRET,
+            'access_token'     => accessToken,
+            'account_id'       => accountId,
+            'authorization_id' => authorizationId,
+            'description'      => description
+        };
+        return callPlaid('/transfer/create', body);
+    }
+
     public static Map<String, Object> removeItem(String accessToken) {
         Map<String, Object> body = new Map<String, Object>{
             'client_id' => CLIENT_ID,

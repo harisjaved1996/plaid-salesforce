@@ -289,6 +289,92 @@ public with sharing class PlaidController {
     }
 
     @AuraEnabled
+    public static Map<String, Object> createTransfer(
+        String sourceConnectionId, String sourceAccountId,
+        String destConnectionId,   String destAccountId,
+        String network, String amount, String achClass,
+        String description, String sourceLegalName, String destLegalName
+    ) {
+        try {
+            String userId = UserInfo.getUserId();
+
+            Plaid_Connection__c sourceConn = [
+                SELECT Id, Access_Token__c
+                FROM Plaid_Connection__c
+                WHERE Id = :sourceConnectionId AND User__c = :userId AND Status__c = 'Active'
+                LIMIT 1
+            ];
+
+            Plaid_Connection__c destConn = [
+                SELECT Id, Access_Token__c
+                FROM Plaid_Connection__c
+                WHERE Id = :destConnectionId AND User__c = :userId AND Status__c = 'Active'
+                LIMIT 1
+            ];
+
+            // Step 1 — Authorize debit from source account
+            Map<String, Object> sourceAuthResp = PlaidService.createTransferAuthorization(
+                sourceConn.Access_Token__c, sourceAccountId, 'debit', network,
+                amount, achClass, sourceLegalName, null, null
+            );
+            Map<String, Object> sourceAuth = (Map<String, Object>) sourceAuthResp.get('authorization');
+            String sourceAuthId   = (String) sourceAuth.get('id');
+            String sourceDecision = (String) sourceAuth.get('decision');
+
+            if ('declined'.equals(sourceDecision)) {
+                Map<String, Object> rat = (Map<String, Object>) sourceAuth.get('decision_rationale');
+                String rationale = rat != null ? ': ' + (String) rat.get('description') : '';
+                throw new AuraHandledException('Debit authorization declined' + rationale);
+            }
+            if ('user_action_required'.equals(sourceDecision)) {
+                throw new AuraHandledException('User action required: please re-authenticate the source bank account.');
+            }
+
+            // Step 2 — Create debit transfer from source
+            Map<String, Object> sourceTxResp = PlaidService.createTransfer(
+                sourceConn.Access_Token__c, sourceAccountId, sourceAuthId, description
+            );
+            Map<String, Object> sourceTransfer = (Map<String, Object>) sourceTxResp.get('transfer');
+
+            // Step 3 — Authorize credit to destination account
+            Map<String, Object> destAuthResp = PlaidService.createTransferAuthorization(
+                destConn.Access_Token__c, destAccountId, 'credit', network,
+                amount, achClass, destLegalName, null, null
+            );
+            Map<String, Object> destAuth = (Map<String, Object>) destAuthResp.get('authorization');
+            String destAuthId   = (String) destAuth.get('id');
+            String destDecision = (String) destAuth.get('decision');
+
+            if ('declined'.equals(destDecision)) {
+                Map<String, Object> rat = (Map<String, Object>) destAuth.get('decision_rationale');
+                String rationale = rat != null ? ': ' + (String) rat.get('description') : '';
+                throw new AuraHandledException('Credit authorization declined' + rationale);
+            }
+            if ('user_action_required'.equals(destDecision)) {
+                throw new AuraHandledException('User action required: please re-authenticate the destination bank account.');
+            }
+
+            // Step 4 — Create credit transfer to destination
+            Map<String, Object> destTxResp = PlaidService.createTransfer(
+                destConn.Access_Token__c, destAccountId, destAuthId, description
+            );
+            Map<String, Object> destTransfer = (Map<String, Object>) destTxResp.get('transfer');
+
+            return new Map<String, Object>{
+                'debitTransferId'  => sourceTransfer.get('id'),
+                'debitStatus'      => sourceTransfer.get('status'),
+                'debitNetwork'     => sourceTransfer.get('network'),
+                'creditTransferId' => destTransfer.get('id'),
+                'creditStatus'     => destTransfer.get('status'),
+                'creditNetwork'    => destTransfer.get('network'),
+                'amount'           => amount
+            };
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    @AuraEnabled
     public static void disconnectBank(String connectionId) {
         try {
             String userId = UserInfo.getUserId();
