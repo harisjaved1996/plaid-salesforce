@@ -71,6 +71,7 @@ public with sharing class PlaidController {
                 result.add(new Map<String, Object>{
                     'connectionId'    => conn.Id,
                     'institutionName' => conn.Institution_Name__c,
+                    'accessToken'     => conn.Access_Token__c,
                     'accounts'        => accounts
                 });
             }
@@ -367,6 +368,92 @@ public with sharing class PlaidController {
                 'creditTransferId' => destTransfer.get('id'),
                 'creditStatus'     => destTransfer.get('status'),
                 'creditNetwork'    => destTransfer.get('network'),
+                'amount'           => amount
+            };
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    @AuraEnabled
+    public static Map<String, Object> createTransferRT(
+        String sourceConnectionId, String sourceAccountId,
+        String recipientAccountNumber, String recipientRoutingNumber, String recipientAccountType,
+        String network, String amount, String achClass,
+        String description, String sourceLegalName
+    ) {
+        try {
+            String userId = UserInfo.getUserId();
+
+            Plaid_Connection__c sourceConn = [
+                SELECT Id, Access_Token__c
+                FROM Plaid_Connection__c
+                WHERE Id = :sourceConnectionId AND User__c = :userId AND Status__c = 'Active'
+                LIMIT 1
+            ];
+
+            // Step 1 — Migrate recipient account to get their Plaid access_token + account_id
+            Map<String, Object> migrateResp = PlaidService.migrateAccount(
+                recipientAccountNumber, recipientRoutingNumber, recipientAccountType
+            );
+            String destAccessToken = (String) migrateResp.get('access_token');
+            String destAccountId   = (String) migrateResp.get('account_id');
+
+            // Step 2 — Authorize debit from sender
+            Map<String, Object> sourceAuthResp = PlaidService.createTransferAuthorization(
+                sourceConn.Access_Token__c, sourceAccountId, 'debit', network,
+                amount, achClass, sourceLegalName, null, null
+            );
+            Map<String, Object> sourceAuth = (Map<String, Object>) sourceAuthResp.get('authorization');
+            String sourceAuthId   = (String) sourceAuth.get('id');
+            String sourceDecision = (String) sourceAuth.get('decision');
+
+            if ('declined'.equals(sourceDecision)) {
+                Map<String, Object> rat = (Map<String, Object>) sourceAuth.get('decision_rationale');
+                String rationale = rat != null ? ': ' + (String) rat.get('description') : '';
+                throw new AuraHandledException('Debit authorization declined' + rationale);
+            }
+            if ('user_action_required'.equals(sourceDecision)) {
+                throw new AuraHandledException('User action required: please re-authenticate the source bank account.');
+            }
+
+            // Step 3 — Create debit transfer from sender
+            Map<String, Object> sourceTxResp = PlaidService.createTransfer(
+                sourceConn.Access_Token__c, sourceAccountId, sourceAuthId, description
+            );
+            Map<String, Object> sourceTransfer = (Map<String, Object>) sourceTxResp.get('transfer');
+
+            // Step 4 — Authorize credit to recipient (migrated account — MIGRATED_ACCOUNT_ITEM rationale is expected and OK)
+            Map<String, Object> destAuthResp = PlaidService.createTransferAuthorization(
+                destAccessToken, destAccountId, 'credit', network,
+                amount, 'ppd', 'Account Holder', null, null
+            );
+            Map<String, Object> destAuth = (Map<String, Object>) destAuthResp.get('authorization');
+            String destAuthId   = (String) destAuth.get('id');
+            String destDecision = (String) destAuth.get('decision');
+
+            if ('declined'.equals(destDecision)) {
+                Map<String, Object> rat = (Map<String, Object>) destAuth.get('decision_rationale');
+                String rationale = rat != null ? ': ' + (String) rat.get('description') : '';
+                throw new AuraHandledException('Credit authorization declined' + rationale);
+            }
+            if ('user_action_required'.equals(destDecision)) {
+                throw new AuraHandledException('User action required for recipient account.');
+            }
+
+            // Step 5 — Create credit transfer to recipient
+            Map<String, Object> destTxResp = PlaidService.createTransfer(
+                destAccessToken, destAccountId, destAuthId, description
+            );
+            Map<String, Object> destTransfer = (Map<String, Object>) destTxResp.get('transfer');
+
+            return new Map<String, Object>{
+                'debitTransferId'  => sourceTransfer.get('id'),
+                'debitStatus'      => sourceTransfer.get('status'),
+                'creditTransferId' => destTransfer.get('id'),
+                'creditStatus'     => destTransfer.get('status'),
+                'destAccessToken'  => destAccessToken,
+                'destAccountId'    => destAccountId,
                 'amount'           => amount
             };
         } catch (Exception e) {

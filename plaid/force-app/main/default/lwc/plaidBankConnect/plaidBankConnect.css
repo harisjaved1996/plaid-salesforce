@@ -1486,3 +1486,66 @@
     color: #9ca3af;
     font-size: 0.875rem;
 }
+
+/* ── Account Token / ID display ───────────────────── */
+.acct-token-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.375rem;
+    margin-top: 0.25rem;
+}
+
+.acct-token-label {
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: #9ca3af;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.acct-token-value {
+    font-size: 0.625rem;
+    font-family: 'Courier New', Courier, monospace;
+    color: #6b7280;
+    word-break: break-all;
+}
+
+/* ── Send Transfer via RT button ──────────────────── */
+.send-rt-transfer-btn {
+    padding: 0.3125rem 0.625rem;
+    border-radius: 6px;
+    border: 1.5px solid #7c3aed;
+    background: #fff;
+    color: #7c3aed;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+}
+
+.send-rt-transfer-btn:hover {
+    background: #7c3aed;
+    color: #fff;
+}
+
+/* ── RT Transfer Modal ────────────────────────────── */
+.rt-transfer-modal {
+    max-width: 580px;
+}
+
+.rt-transfer-modal-header {
+    background: linear-gradient(135deg, #4c1d95, #7c3aed);
+}
+
+.rt-transfer-modal-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}

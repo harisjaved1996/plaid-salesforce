@@ -128,6 +128,17 @@ public with sharing class PlaidService {
         return callPlaid('/transfer/create', body);
     }
 
+    public static Map<String, Object> migrateAccount(String accountNumber, String routingNumber, String accountType) {
+        Map<String, Object> body = new Map<String, Object>{
+            'client_id'      => CLIENT_ID,
+            'secret'         => SECRET,
+            'account_number' => accountNumber,
+            'routing_number' => routingNumber,
+            'account_type'   => accountType
+        };
+        return callPlaid('/transfer/migrate_account', body);
+    }
+
     public static Map<String, Object> removeItem(String accessToken) {
         Map<String, Object> body = new Map<String, Object>{
             'client_id' => CLIENT_ID,
@@ -155,7 +166,7 @@ public with sharing class PlaidService {
             }
             throw new PlaidException(errorMsg);
         }
-
+        system.debug(json.serialize(responseMap));
         return responseMap;
     }
 

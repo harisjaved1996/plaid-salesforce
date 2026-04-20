@@ -114,6 +114,14 @@
                                             <span class="acct-mask">••••{account.mask}</span>
                                             <span class={account.chipClass}>{account.subtype}</span>
                                         </div>
+                                        <div class="acct-token-row">
+                                            <span class="acct-token-label">Account ID:</span>
+                                            <span class="acct-token-value">{account.accountId}</span>
+                                        </div>
+                                        <div class="acct-token-row">
+                                            <span class="acct-token-label">Access Token:</span>
+                                            <span class="acct-token-value">{account.accessToken}</span>
+                                        </div>
                                     </div>
 
                                     <div class="acct-right">
@@ -139,6 +147,13 @@
                                             data-connection-id={account.connectionId} onclick={handleSendTransfer}
                                             title="Send ACH transfer from this account">
                                             Send Transfer
+                                        </button>
+
+                                        <button class="send-rt-transfer-btn" data-group-key={connection.groupKey}
+                                            data-account-id={account.accountId}
+                                            data-connection-id={account.connectionId} onclick={handleSendTransferRT}
+                                            title="Send transfer to external account via routing/account number">
+                                            Send Transfer via RT
                                         </button>
 
                                         <button class="get-auth-btn" data-account-id={account.accountId}
@@ -611,6 +626,126 @@
 
                         <div class="acct-modal-footer">
                             <button class="acct-modal-footer-btn" onclick={handleCloseIdentityModal}>Close</button>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- ── RT Transfer Modal (migrate_account flow) ──────── -->
+                <template if:true={isRTTransferModalOpen}>
+                    <div class="acct-modal-backdrop" onclick={handleCloseRTTransferModal}></div>
+                    <div class="acct-modal rt-transfer-modal" role="dialog" aria-modal="true" aria-label="Send Transfer via RT">
+
+                        <!-- Header -->
+                        <div class="acct-modal-header rt-transfer-modal-header">
+                            <div class="acct-modal-header-left">
+                                <div class="rt-transfer-modal-icon">
+                                    <lightning-icon icon-name="utility:routing_offline" size="small" variant="inverse"></lightning-icon>
+                                </div>
+                                <div>
+                                    <h2 class="acct-modal-title">Send Transfer via RT</h2>
+                                    <p class="acct-modal-subtitle">Debit from {rtTransferSourceAccount.institutionName} · {rtTransferSourceAccount.name} ••••{rtTransferSourceAccount.mask}</p>
+                                </div>
+                            </div>
+                            <button class="acct-modal-close" onclick={handleCloseRTTransferModal}>✕</button>
+                        </div>
+
+                        <!-- Body -->
+                        <div class="acct-modal-body">
+
+                            <!-- Recipient details -->
+                            <div class="acct-modal-section">
+                                <h3 class="acct-modal-section-title">Recipient Bank Details</h3>
+                                <div class="transfer-params-grid">
+                                    <div class="transfer-row-field">
+                                        <label class="transfer-label">Account Number <span class="transfer-required">*</span></label>
+                                        <input type="text" class="transfer-input" data-field="rtRecipientAccountNumber"
+                                            onchange={handleRTTransferFieldChange} placeholder="e.g. 100000000" />
+                                    </div>
+                                    <div class="transfer-row-field">
+                                        <label class="transfer-label">Routing Number <span class="transfer-required">*</span></label>
+                                        <input type="text" class="transfer-input" data-field="rtRecipientRoutingNumber"
+                                            onchange={handleRTTransferFieldChange} placeholder="e.g. 121122676" />
+                                    </div>
+                                    <div class="transfer-row-field">
+                                        <label class="transfer-label">Account Type <span class="transfer-required">*</span></label>
+                                        <select class="transfer-select" data-field="rtRecipientAccountType" onchange={handleRTTransferFieldChange}>
+                                            <option value="checking">Checking</option>
+                                            <option value="savings">Savings</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Transfer details -->
+                            <div class="acct-modal-section">
+                                <h3 class="acct-modal-section-title">Transfer Details</h3>
+                                <div class="transfer-params-grid">
+                                    <div class="transfer-row-field">
+                                        <label class="transfer-label">Amount ($) <span class="transfer-required">*</span></label>
+                                        <input type="number" class="transfer-input" data-field="rtTransferAmount"
+                                            onchange={handleRTTransferFieldChange} placeholder="0.00" min="0.01" step="0.01" />
+                                    </div>
+                                    <div class="transfer-row-field">
+                                        <label class="transfer-label">Network</label>
+                                        <select class="transfer-select" data-field="rtTransferNetwork" onchange={handleRTTransferFieldChange}>
+                                            <option value="ach">ACH – Standard (1-3 days)</option>
+                                            <option value="same-day-ach">Same-Day ACH</option>
+                                            <option value="rtp">RTP – Real-Time</option>
+                                        </select>
+                                    </div>
+                                    <div class="transfer-row-field">
+                                        <label class="transfer-label">ACH Class (sender)</label>
+                                        <select class="transfer-select" data-field="rtTransferAchClass" onchange={handleRTTransferFieldChange}>
+                                            <option value="web">WEB – Internet (default)</option>
+                                            <option value="ccd">CCD – Corporate</option>
+                                            <option value="tel">TEL – Telephone</option>
+                                        </select>
+                                    </div>
+                                    <div class="transfer-row-field">
+                                        <label class="transfer-label">Description <span class="transfer-hint">(max 10 chars)</span></label>
+                                        <input type="text" class="transfer-input" data-field="rtTransferDescription"
+                                            onchange={handleRTTransferFieldChange} placeholder="e.g. Payment" maxlength="10" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Result -->
+                            <template if:true={hasRTTransferResult}>
+                                <div class="acct-modal-section">
+                                    <h3 class="acct-modal-section-title">Transfer Result</h3>
+                                    <template if:true={rtTransferResult.success}>
+                                        <div class="transfer-result-success">
+                                            <lightning-icon icon-name="utility:success" size="x-small" variant="success"></lightning-icon>
+                                            <div class="transfer-result-info">
+                                                <span class="transfer-result-label">{rtTransferResult.label}</span>
+                                                <span class="transfer-result-meta">Debit ID: {rtTransferResult.debitTransferId} · Status: {rtTransferResult.debitStatus}</span>
+                                                <span class="transfer-result-meta">Credit ID: {rtTransferResult.creditTransferId} · Status: {rtTransferResult.creditStatus}</span>
+                                                <span class="transfer-result-meta">Recipient Access Token: {rtTransferResult.destAccessToken}</span>
+                                                <span class="transfer-result-meta">Recipient Account ID: {rtTransferResult.destAccountId}</span>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <template if:false={rtTransferResult.success}>
+                                        <div class="transfer-result-failure">
+                                            <lightning-icon icon-name="utility:error" size="x-small"></lightning-icon>
+                                            <div class="transfer-result-info">
+                                                <span class="transfer-result-label">Transfer Failed</span>
+                                                <span class="transfer-result-error">{rtTransferResult.error}</span>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+
+                        </div>
+
+                        <!-- Footer -->
+                        <div class="acct-modal-footer">
+                            <button class="acct-modal-footer-btn" onclick={handleCloseRTTransferModal}>Close</button>
+                            <button class="transfer-submit-btn" onclick={handleSubmitRTTransfer} disabled={isSubmittingRTTransfer}>
+                                <template if:true={isSubmittingRTTransfer}>Processing...</template>
+                                <template if:false={isSubmittingRTTransfer}>Send Transfer</template>
+                            </button>
                         </div>
                     </div>
                 </template>

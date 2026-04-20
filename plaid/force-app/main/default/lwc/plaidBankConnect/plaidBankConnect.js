@@ -10,6 +10,7 @@ import getConnectedAccounts from '@salesforce/apex/PlaidController.getConnectedA
 import getAuth              from '@salesforce/apex/PlaidController.getAuth';
 import getIdentity          from '@salesforce/apex/PlaidController.getIdentity';
 import createTransfer       from '@salesforce/apex/PlaidController.createTransfer';
+import createTransferRT     from '@salesforce/apex/PlaidController.createTransferRT';
 import getTransactions      from '@salesforce/apex/PlaidController.getTransactions';
 import disconnectBank       from '@salesforce/apex/PlaidController.disconnectBank';
 import hasActiveConnection  from '@salesforce/apex/PlaidController.hasActiveConnection';
@@ -111,6 +112,20 @@ export default class PlaidBankConnect extends LightningElement {
     @track isSubmittingTransfer     = false;
     @track transferResult           = null;
 
+    // ── RT Transfer Modal state ───────────────────────────────
+    @track isRTTransferModalOpen     = false;
+    @track rtTransferSourceAccount   = null;
+    @track rtRecipientAccountNumber  = '';
+    @track rtRecipientRoutingNumber  = '';
+    @track rtRecipientAccountType    = 'checking';
+    @track rtTransferAmount          = '';
+    @track rtTransferNetwork         = 'ach';
+    @track rtTransferAchClass        = 'web';
+    @track rtTransferDescription     = '';
+    @track rtSourceLegalName         = '';
+    @track isSubmittingRTTransfer    = false;
+    @track rtTransferResult          = null;
+
     // ── Transactions Modal state ──────────────────────────────
     @track isTransactionsModalOpen  = false;
     @track isLoadingTransactions    = false;
@@ -153,7 +168,11 @@ export default class PlaidBankConnect extends LightningElement {
             const group = groupMap.get(key);
             group.connectionIds.push(conn.connectionId);
             (conn.accounts || []).forEach(acct =>
-                group.accounts.push(enrichAccount({ ...acct, connectionId: conn.connectionId }))
+                group.accounts.push(enrichAccount({
+                    ...acct,
+                    connectionId: conn.connectionId,
+                    accessToken:  conn.accessToken,
+                }))
             );
         });
 
@@ -484,6 +503,95 @@ export default class PlaidBankConnect extends LightningElement {
         }
     }
 
+    // ── RT Transfer Modal (migrate_account flow) ──────────────
+    async handleSendTransferRT(event) {
+        event.stopPropagation();
+        const { connectionId, accountId, groupKey } = event.currentTarget.dataset;
+        const group   = this.connections.find(c => c.groupKey === groupKey);
+        const account = group?.accounts.find(a => a.accountId === accountId);
+
+        this.rtTransferSourceAccount  = {
+            connectionId, accountId,
+            name:            account?.name          || 'Account',
+            mask:            account?.mask          || '',
+            institutionName: group?.institutionName || '',
+            iconName:        account?.iconName      || 'utility:money',
+        };
+        this.rtRecipientAccountNumber = '';
+        this.rtRecipientRoutingNumber = '';
+        this.rtRecipientAccountType   = 'checking';
+        this.rtTransferAmount         = '';
+        this.rtTransferNetwork        = 'ach';
+        this.rtTransferAchClass       = 'web';
+        this.rtTransferDescription    = '';
+        this.rtSourceLegalName        = '';
+        this.rtTransferResult         = null;
+        this.isRTTransferModalOpen    = true;
+
+        try {
+            const raw = await getIdentity({ connectionId, accountId });
+            this.rtSourceLegalName = raw?.owners?.[0]?.names?.[0] || '';
+        } catch (e) { /* identity not enabled — proceed without name */ }
+    }
+
+    handleRTTransferFieldChange(event) {
+        const field = event.currentTarget.dataset.field;
+        this[field] = event.target.value;
+    }
+
+    handleCloseRTTransferModal() {
+        this.isRTTransferModalOpen = false;
+        this.rtTransferResult      = null;
+    }
+
+    async handleSubmitRTTransfer() {
+        if (!this.rtRecipientAccountNumber.trim()) {
+            this._showToast('Error', 'Please enter the recipient account number.', 'error');
+            return;
+        }
+        if (!this.rtRecipientRoutingNumber.trim()) {
+            this._showToast('Error', 'Please enter the recipient routing number.', 'error');
+            return;
+        }
+        const amt = parseFloat(this.rtTransferAmount);
+        if (!amt || amt <= 0) {
+            this._showToast('Error', 'Please enter a valid amount greater than 0.', 'error');
+            return;
+        }
+        this.isSubmittingRTTransfer = true;
+        this.rtTransferResult       = null;
+        try {
+            const res = await createTransferRT({
+                sourceConnectionId:       this.rtTransferSourceAccount.connectionId,
+                sourceAccountId:          this.rtTransferSourceAccount.accountId,
+                recipientAccountNumber:   this.rtRecipientAccountNumber.trim(),
+                recipientRoutingNumber:   this.rtRecipientRoutingNumber.trim(),
+                recipientAccountType:     this.rtRecipientAccountType,
+                network:                  this.rtTransferNetwork,
+                amount:                   amt.toFixed(2),
+                achClass:                 this.rtTransferAchClass,
+                description:              (this.rtTransferDescription || 'Transfer').substring(0, 10),
+                sourceLegalName:          this.rtSourceLegalName || 'Account Holder',
+            });
+            this.rtTransferResult = {
+                success:          true,
+                label:            `$${amt.toFixed(2)} transfer initiated successfully`,
+                debitTransferId:  res.debitTransferId,
+                debitStatus:      res.debitStatus,
+                creditTransferId: res.creditTransferId,
+                creditStatus:     res.creditStatus,
+                destAccessToken:  res.destAccessToken,
+                destAccountId:    res.destAccountId,
+            };
+            this._showToast('Success', `Transfer of $${amt.toFixed(2)} initiated via migrate_account.`, 'success');
+        } catch (err) {
+            const msg = err?.body?.message || err?.message || 'Transfer failed';
+            this.rtTransferResult = { success: false, error: msg };
+        } finally {
+            this.isSubmittingRTTransfer = false;
+        }
+    }
+
     // ── Transactions Modal ────────────────────────────────────
     async handleViewTransactions(event) {
         event.stopPropagation();
@@ -534,6 +642,7 @@ export default class PlaidBankConnect extends LightningElement {
     get hasIdentityData()     { return !!this.identityData; }
     get hasAuthData()         { return !!this.authData; }
     get hasTransferResult()   { return !!this.transferResult; }
+    get hasRTTransferResult() { return !!this.rtTransferResult; }
     get hasTransactions()     { return this.transactions && this.transactions.length > 0; }
     get noTransactions()      { return !this.isLoadingTransactions && (!this.transactions || this.transactions.length === 0); }
 
